@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Trash2, Copy, ArrowUp, ArrowDown, BookmarkPlus, 
-  Plus, Move, GripVertical, Check, ExternalLink, Play, LayoutGrid, Upload
+  Plus, Move, GripVertical, Check, ExternalLink, Play, LayoutGrid, Upload,
+  Bold, Italic, Underline
 } from 'lucide-react';
 import { EmailBlock, EmailRow, EmailColumn, EmailDocument, DeviceVisibility } from '../../types/email';
 import { compressImageFile } from '../../utils/imageOptimizer';
@@ -57,6 +58,149 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
 }) => {
   const [dropTarget, setDropTarget] = useState<DropTargetState | null>(null);
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
+
+  // Floating text selection toolbar (Bold, Italic, Underline)
+  const [selectionToolbar, setSelectionToolbar] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    isBold: boolean;
+    isItalic: boolean;
+    isUnderline: boolean;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    isBold: false,
+    isItalic: false,
+    isUnderline: false
+  });
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const handleSelectionUpdate = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || !selection.rangeCount) {
+        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+        return;
+      }
+
+      const text = selection.toString().trim();
+      if (!text) {
+        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+        return;
+      }
+
+      const anchor = selection.anchorNode;
+      const parent = anchor?.nodeType === Node.ELEMENT_NODE ? (anchor as HTMLElement) : anchor?.parentElement;
+      const editable = parent?.closest('[contenteditable="true"]');
+      if (!editable || !mainRef.current?.contains(editable)) {
+        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      if (!rect || (rect.width === 0 && rect.height === 0)) {
+        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+        return;
+      }
+
+      let isBold = false;
+      let isItalic = false;
+      let isUnderline = false;
+      try {
+        isBold = document.queryCommandState('bold');
+        isItalic = document.queryCommandState('italic');
+        isUnderline = document.queryCommandState('underline');
+      } catch (e) {}
+
+      const clampedX = Math.max(140, Math.min(window.innerWidth - 140, rect.left + rect.width / 2));
+      const targetY = Math.max(70, rect.top - 12);
+
+      setSelectionToolbar({
+        visible: true,
+        x: clampedX,
+        y: targetY,
+        isBold,
+        isItalic,
+        isUnderline
+      });
+    };
+
+    const handleMouseUp = () => {
+      setTimeout(handleSelectionUpdate, 15);
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (['Shift', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) || (e.ctrlKey || e.metaKey)) {
+        setTimeout(handleSelectionUpdate, 15);
+      }
+    };
+
+    const handleScroll = () => {
+      setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+    };
+
+    document.addEventListener('selectionchange', handleSelectionUpdate);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('keyup', handleKeyUp);
+    const mainEl = mainRef.current;
+    if (mainEl) {
+      mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    }
+
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionUpdate);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('keyup', handleKeyUp);
+      if (mainEl) {
+        mainEl.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
+
+  const handleFormatCommand = (command: 'bold' | 'italic' | 'underline') => {
+    document.execCommand(command, false);
+
+    try {
+      setSelectionToolbar(prev => ({
+        ...prev,
+        isBold: document.queryCommandState('bold'),
+        isItalic: document.queryCommandState('italic'),
+        isUnderline: document.queryCommandState('underline')
+      }));
+    } catch (e) {}
+
+    const selection = window.getSelection();
+    const anchor = selection?.anchorNode;
+    const parent = anchor?.nodeType === Node.ELEMENT_NODE ? (anchor as HTMLElement) : anchor?.parentElement;
+    const editable = parent?.closest('[contenteditable="true"]') as HTMLElement | null;
+
+    if (editable) {
+      const blockId = editable.getAttribute('data-block-id');
+      if (blockId) {
+        for (const row of doc.rows) {
+          for (const col of row.columns) {
+            for (const b of col.blocks) {
+              if (b.id === blockId) {
+                onUpdateBlock({
+                  ...b,
+                  content: { 
+                    ...b.content, 
+                    html: editable.innerHTML, 
+                    text: editable.innerText 
+                  }
+                });
+                break;
+              }
+            }
+          }
+        }
+      }
+      editable.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
 
   const { globalSettings } = doc;
   const containerWidth = globalSettings.containerWidth || 600;
@@ -338,13 +482,17 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
           >
             {block.type === 'heading' && (
               <div
+                data-block-id={block.id}
                 contentEditable
                 suppressContentEditableWarning
-                onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, text: e.currentTarget.innerText } })}
+                onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, html: e.currentTarget.innerHTML, text: e.currentTarget.innerText } })}
+                dangerouslySetInnerHTML={{ __html: block.content.html || block.content.text || '' }}
                 style={{
                   fontFamily: block.style.fontFamily || globalSettings.defaultFontFamily,
                   fontSize: `${block.style.fontSize || (block.content.level === 'h1' ? 28 : block.content.level === 'h2' ? 22 : 18)}px`,
                   fontWeight: block.style.fontWeight || 700,
+                  fontStyle: block.style.fontStyle,
+                  textDecoration: block.style.textDecoration,
                   color: block.style.color || globalSettings.defaultHeadingColor || '#111827',
                   lineHeight: block.style.lineHeight || 1.3,
                   letterSpacing: block.style.letterSpacing ? `${block.style.letterSpacing}px` : undefined,
@@ -352,13 +500,12 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                   whiteSpace: 'pre-line'
                 }}
                 className="outline-none focus:bg-indigo-50/40 rounded px-1 -mx-1"
-              >
-                {block.content.text}
-              </div>
+              />
             )}
 
             {block.type === 'text' && (
               <div
+                data-block-id={block.id}
                 contentEditable
                 suppressContentEditableWarning
                 onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, html: e.currentTarget.innerHTML, text: e.currentTarget.innerText } })}
@@ -367,6 +514,8 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                   fontFamily: block.style.fontFamily || globalSettings.defaultFontFamily,
                   fontSize: `${block.style.fontSize || 15}px`,
                   fontWeight: block.style.fontWeight,
+                  fontStyle: block.style.fontStyle,
+                  textDecoration: block.style.textDecoration,
                   color: block.style.color || globalSettings.defaultTextColor || '#475569',
                   lineHeight: block.style.lineHeight || 1.6,
                   letterSpacing: block.style.letterSpacing ? `${block.style.letterSpacing}px` : undefined,
@@ -831,6 +980,7 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
 
   return (
     <main 
+      ref={mainRef}
       className="flex-1 h-full min-h-0 overflow-y-auto p-8 flex flex-col items-center justify-start select-text pb-40"
       style={{ 
         backgroundColor: globalSettings.bodyBgColor || '#f4f5f8',
@@ -1011,6 +1161,85 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
         </div>
 
       </div>
+
+      {/* Floating Rich-Text Selection Toolbar (Bold, Italic, Underline) */}
+      {selectionToolbar.visible && (
+        <div 
+          className="fixed z-[9999] bg-slate-900/95 text-white backdrop-blur-md px-2 py-1.5 rounded-xl shadow-2xl border border-slate-700/80 flex items-center gap-1 select-none animate-in fade-in zoom-in-95 duration-100"
+          style={{ 
+            left: `${selectionToolbar.x}px`, 
+            top: `${selectionToolbar.y}px`, 
+            transform: 'translate(-50%, -100%)' 
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          {/* Bold Button */}
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleFormatCommand('bold');
+            }}
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+              selectionToolbar.isBold 
+                ? 'bg-indigo-600 text-white shadow-xs' 
+                : 'text-slate-200 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Negrito (Bold) - Ctrl+B"
+          >
+            <Bold className="w-4 h-4 stroke-[2.5]" />
+            <span className="text-[11px] font-bold">Bold</span>
+          </button>
+
+          <div className="w-px h-4 bg-slate-700/80" />
+
+          {/* Italic Button */}
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleFormatCommand('italic');
+            }}
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs italic transition-all cursor-pointer ${
+              selectionToolbar.isItalic 
+                ? 'bg-indigo-600 text-white shadow-xs' 
+                : 'text-slate-200 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Itálico (Italic) - Ctrl+I"
+          >
+            <Italic className="w-4 h-4 stroke-[2.5]" />
+            <span className="text-[11px] font-semibold">Italic</span>
+          </button>
+
+          <div className="w-px h-4 bg-slate-700/80" />
+
+          {/* Underline Button */}
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleFormatCommand('underline');
+            }}
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs underline transition-all cursor-pointer ${
+              selectionToolbar.isUnderline 
+                ? 'bg-indigo-600 text-white shadow-xs' 
+                : 'text-slate-200 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Sublinhado (Underline) - Ctrl+U"
+          >
+            <Underline className="w-4 h-4 stroke-[2.5]" />
+            <span className="text-[11px] font-semibold">Underline</span>
+          </button>
+
+          {/* Indicator triangle */}
+          <div 
+            className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-3 h-3 bg-slate-900/95 border-r border-b border-slate-700/80 rotate-45 pointer-events-none" 
+          />
+        </div>
+      )}
 
     </main>
   );

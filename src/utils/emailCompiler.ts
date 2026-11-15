@@ -178,7 +178,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
 
   switch (type) {
     case 'heading': {
-      const text = (content.text || 'Título').replace(/\n/g, '<br />');
+      const text = (content.html || content.text || 'Título').replace(/\n/g, '<br />');
       const level = content.level || 'h2';
       const size = style.fontSize || (level === 'h1' ? 28 : level === 'h2' ? 22 : 18);
       const weight = style.fontWeight || 700;
@@ -189,9 +189,11 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
       const lHeight = style.lineHeight ? `${style.lineHeight}` : '1.3';
       const letterSpacing = style.letterSpacing !== undefined ? `letter-spacing: ${style.letterSpacing}px;` : '';
       const textTransform = style.textTransform ? `text-transform: ${style.textTransform};` : '';
+      const fontStyle = style.fontStyle ? `font-style: ${style.fontStyle};` : '';
+      const textDecoration = style.textDecoration ? `text-decoration: ${style.textDecoration};` : '';
 
       return `
-        <div style="font-family: ${defaultFont}; font-size: ${size}px; font-weight: ${weight}; color: ${color}; text-align: ${align}; margin-top: ${mTop}px; margin-bottom: ${mBottom}px; line-height: ${lHeight}; ${letterSpacing} ${textTransform} mso-line-height-rule: exactly;">
+        <div style="font-family: ${defaultFont}; font-size: ${size}px; font-weight: ${weight}; color: ${color}; text-align: ${align}; margin-top: ${mTop}px; margin-bottom: ${mBottom}px; line-height: ${lHeight}; ${letterSpacing} ${textTransform} ${fontStyle} ${textDecoration} mso-line-height-rule: exactly;">
           ${text}
         </div>
       `;
@@ -208,9 +210,11 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
       const mBottom = style.marginBottom ?? 12;
       const letterSpacing = style.letterSpacing !== undefined ? `letter-spacing: ${style.letterSpacing}px;` : '';
       const textTransform = style.textTransform ? `text-transform: ${style.textTransform};` : '';
+      const fontStyle = style.fontStyle ? `font-style: ${style.fontStyle};` : '';
+      const textDecoration = style.textDecoration ? `text-decoration: ${style.textDecoration};` : '';
 
       return `
-        <div style="font-family: ${defaultFont}; font-size: ${size}px; font-weight: ${weight}; color: ${color}; text-align: ${align}; line-height: ${lHeight}; ${letterSpacing} ${textTransform} margin-top: ${mTop}px; margin-bottom: ${mBottom}px; mso-line-height-rule: exactly;">
+        <div style="font-family: ${defaultFont}; font-size: ${size}px; font-weight: ${weight}; color: ${color}; text-align: ${align}; line-height: ${lHeight}; ${letterSpacing} ${textTransform} ${fontStyle} ${textDecoration} margin-top: ${mTop}px; margin-bottom: ${mBottom}px; mso-line-height-rule: exactly;">
           ${htmlContent}
         </div>
       `;

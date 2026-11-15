@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   AlignLeft, AlignCenter, AlignRight, AlignJustify, 
-  Bold, Italic, Link2, Image as ImageIcon, Sliders, 
+  Bold, Italic, Underline, Link2, Image as ImageIcon, Sliders, 
   Smartphone, Monitor, Eye, Sparkles, FolderOpen, Tag,
   LayoutGrid, Plus, Minus, Trash2, Copy, Upload
 } from 'lucide-react';
@@ -670,13 +670,107 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         {block.type === 'heading' && (
           <>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Texto do Título</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-semibold text-slate-700">Texto do Título</label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = block.content.html || block.content.text || '';
+                      updateContent({ html: `<b>${cur || 'Título'}</b>`, text: cur });
+                    }}
+                    className="px-1.5 py-0.5 text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded font-bold border border-slate-200"
+                    title="Envolver em Negrito <b>"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = block.content.html || block.content.text || '';
+                      updateContent({ html: `<i>${cur || 'Título'}</i>`, text: cur });
+                    }}
+                    className="px-1.5 py-0.5 text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded italic font-serif border border-slate-200"
+                    title="Envolver em Itálico <i>"
+                  >
+                    I
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = block.content.html || block.content.text || '';
+                      updateContent({ html: `<u>${cur || 'Título'}</u>`, text: cur });
+                    }}
+                    className="px-1.5 py-0.5 text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded underline border border-slate-200"
+                    title="Envolver em Sublinhado <u>"
+                  >
+                    U
+                  </button>
+                </div>
+              </div>
               <textarea
                 rows={2}
-                value={block.content.text || ''}
-                onChange={e => updateContent({ text: e.target.value })}
+                value={block.content.html || block.content.text || ''}
+                onChange={e => updateContent({ html: e.target.value, text: e.target.value })}
                 className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
               />
+            </div>
+
+            {/* Estilo do Texto: Bold, Italic, Underline */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Estilo do Título</label>
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-50 border border-slate-200 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isBold = block.style.fontWeight === 700 || block.style.fontWeight === 'bold';
+                    updateStyle({ fontWeight: isBold ? 400 : 700 });
+                  }}
+                  className={`py-1.5 px-2 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                    (block.style.fontWeight === 700 || block.style.fontWeight === 'bold')
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                  title="Negrito (Bold)"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                  <span>Negrito</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isItalic = block.style.fontStyle === 'italic';
+                    updateStyle({ fontStyle: isItalic ? 'normal' : 'italic' });
+                  }}
+                  className={`py-1.5 px-2 rounded-md text-xs italic flex items-center justify-center gap-1 transition-all ${
+                    block.style.fontStyle === 'italic'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                  title="Itálico (Italic)"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                  <span>Itálico</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isUnderline = block.style.textDecoration === 'underline';
+                    updateStyle({ textDecoration: isUnderline ? 'none' : 'underline' });
+                  }}
+                  className={`py-1.5 px-2 rounded-md text-xs underline flex items-center justify-center gap-1 transition-all ${
+                    block.style.textDecoration === 'underline'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                  title="Sublinhado (Underline)"
+                >
+                  <Underline className="w-3.5 h-3.5" />
+                  <span>Sublinhado</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -710,7 +804,44 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         {block.type === 'text' && (
           <>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Conteúdo do Parágrafo</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-semibold text-slate-700">Conteúdo do Parágrafo</label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = block.content.html || block.content.text || '';
+                      updateContent({ html: `<b>${cur || 'Texto'}</b>`, text: cur });
+                    }}
+                    className="px-1.5 py-0.5 text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded font-bold border border-slate-200"
+                    title="Envolver em Negrito <b>"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = block.content.html || block.content.text || '';
+                      updateContent({ html: `<i>${cur || 'Texto'}</i>`, text: cur });
+                    }}
+                    className="px-1.5 py-0.5 text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded italic font-serif border border-slate-200"
+                    title="Envolver em Itálico <i>"
+                  >
+                    I
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = block.content.html || block.content.text || '';
+                      updateContent({ html: `<u>${cur || 'Texto'}</u>`, text: cur });
+                    }}
+                    className="px-1.5 py-0.5 text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded underline border border-slate-200"
+                    title="Envolver em Sublinhado <u>"
+                  >
+                    U
+                  </button>
+                </div>
+              </div>
               <textarea
                 rows={4}
                 value={block.content.html || block.content.text || ''}
@@ -731,6 +862,63 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                     {tag}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Estilo do Texto: Bold, Italic, Underline */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Estilo do Texto</label>
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-50 border border-slate-200 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isBold = block.style.fontWeight === 700 || block.style.fontWeight === 'bold';
+                    updateStyle({ fontWeight: isBold ? 400 : 700 });
+                  }}
+                  className={`py-1.5 px-2 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                    (block.style.fontWeight === 700 || block.style.fontWeight === 'bold')
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                  title="Negrito (Bold)"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                  <span>Negrito</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isItalic = block.style.fontStyle === 'italic';
+                    updateStyle({ fontStyle: isItalic ? 'normal' : 'italic' });
+                  }}
+                  className={`py-1.5 px-2 rounded-md text-xs italic flex items-center justify-center gap-1 transition-all ${
+                    block.style.fontStyle === 'italic'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                  title="Itálico (Italic)"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                  <span>Itálico</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isUnderline = block.style.textDecoration === 'underline';
+                    updateStyle({ textDecoration: isUnderline ? 'none' : 'underline' });
+                  }}
+                  className={`py-1.5 px-2 rounded-md text-xs underline flex items-center justify-center gap-1 transition-all ${
+                    block.style.textDecoration === 'underline'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                  title="Sublinhado (Underline)"
+                >
+                  <Underline className="w-3.5 h-3.5" />
+                  <span>Sublinhado</span>
+                </button>
               </div>
             </div>
 
