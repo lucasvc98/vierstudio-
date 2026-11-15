@@ -111,6 +111,9 @@ export function compileEmailHtml(doc: EmailDocument): string {
 
 function renderRow(row: EmailRow, containerWidth: number, globalSettings: any): string {
   const rowBg = row.style.backgroundColor || 'transparent';
+  const rowBgImage = row.style.backgroundImage 
+    ? `background-image: url('${row.style.backgroundImage}'); background-size: ${row.style.backgroundSize || 'cover'}; background-position: ${row.style.backgroundPosition || 'center'}; background-repeat: ${row.style.backgroundRepeat || 'no-repeat'};`
+    : '';
   const padTop = row.style.paddingTop ?? 16;
   const padBottom = row.style.paddingBottom ?? 16;
   const padLeft = row.style.paddingLeft ?? 24;
@@ -154,7 +157,7 @@ function renderRow(row: EmailRow, containerWidth: number, globalSettings: any): 
   return `
     <!-- ROW: ${row.id} -->
     <tr>
-      <td style="background-color: ${rowBg}; padding: ${padTop}px ${padRight}px ${padBottom}px ${padLeft}px;" class="mobile-padding">
+      <td style="background-color: ${rowBg}; ${rowBgImage} padding: ${padTop}px ${padRight}px ${padBottom}px ${padLeft}px;" class="mobile-padding">
         <!--[if (gte mso 9)|(IE)]>
         <table role="presentation" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr>
@@ -504,7 +507,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
     }
 
     case 'html': {
-      return content.code || '<!-- Bloco HTML Personalizado -->';
+      return content.html || content.code || '<!-- Bloco HTML Personalizado -->';
     }
 
     default:

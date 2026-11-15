@@ -87,6 +87,10 @@ export interface EmailColumn {
 
 export interface RowStyle {
   backgroundColor?: string;
+  backgroundImage?: string;
+  backgroundSize?: string;
+  backgroundPosition?: string;
+  backgroundRepeat?: string;
   paddingTop?: number;
   paddingBottom?: number;
   paddingLeft?: number;
@@ -107,6 +111,7 @@ export interface GlobalEmailSettings {
   containerWidth: number; // default 600
   bodyBgColor: string; // default #f4f5f8
   contentBgColor: string; // default #ffffff
+  contentBgImage?: string;
   defaultFontFamily: string; // default Arial, sans-serif
   defaultTextColor: string; // default #333333
   defaultHeadingColor: string; // default #111827

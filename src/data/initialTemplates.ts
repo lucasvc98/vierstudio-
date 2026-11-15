@@ -207,181 +207,25 @@ export const INITIAL_TEMPLATES: TemplateModel[] = [
             }
           ]
         },
-        // 5. Grid de Premiações & Prova Social (2 Colunas)
+        // 5. Os 3 Cards de Benefícios (Erros, Estratégias, Gestão)
         {
-          id: 'row-monetter-highlights',
-          layout: '2-col-equal',
+          id: 'row-monetter-cards',
+          layout: '1-col',
           style: {
-            backgroundColor: '#0f141f',
-            paddingTop: 10,
-            paddingBottom: 16,
+            backgroundColor: '#07090e',
+            paddingTop: 8,
+            paddingBottom: 24,
             paddingLeft: 24,
             paddingRight: 24
           },
           columns: [
             {
-              id: 'col-monetter-card-gifts',
-              widthPercentage: 50,
-              style: {
-                backgroundColor: '#161d2b',
-                paddingTop: 16,
-                paddingBottom: 16,
-                paddingLeft: 18,
-                paddingRight: 18,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: '#2d3748'
-              },
-              blocks: [
-                {
-                  id: 'blk-card-gifts-text',
-                  type: 'html',
-                  content: {
-                    html: `
-                      <div style="text-align:center;">
-                        <span style="font-size: 26px;">🎁</span>
-                        <h4 style="color:#ffffff; font-size:15px; font-weight:800; margin:8px 0 4px 0;">10 Premiações</h4>
-                        <p style="color:#94a3b8; font-size:13px; line-height:19px; margin:0;">
-                          E tem mais: <strong>10 premiações previstas</strong> e distribuídas ao vivo durante o evento!
-                        </p>
-                      </div>
-                    `
-                  },
-                  style: { marginTop: 0, marginBottom: 0 },
-                  deviceVisibility: 'all'
-                }
-              ]
-            },
-            {
-              id: 'col-monetter-card-social',
-              widthPercentage: 50,
-              style: {
-                backgroundColor: '#161d2b',
-                paddingTop: 16,
-                paddingBottom: 16,
-                paddingLeft: 18,
-                paddingRight: 18,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: '#2d3748'
-              },
-              blocks: [
-                {
-                  id: 'blk-card-social-text',
-                  type: 'html',
-                  content: {
-                    html: `
-                      <div style="text-align:center;">
-                        <span style="font-size: 26px;">🔥</span>
-                        <h4 style="color:#ffffff; font-size:15px; font-weight:800; margin:8px 0 4px 0;">+400 Confirmados</h4>
-                        <p style="color:#94a3b8; font-size:13px; line-height:19px; margin:0;">
-                          Mais de <strong>400 pessoas</strong> já confirmaram presença e estão no grupo VIP.
-                        </p>
-                      </div>
-                    `
-                  },
-                  style: { marginTop: 0, marginBottom: 0 },
-                  deviceVisibility: 'all'
-                }
-              ]
-            }
-          ]
-        },
-        // 6. Chamada de Ação Principal (CTA)
-        {
-          id: 'row-monetter-cta',
-          layout: '1-col',
-          style: {
-            backgroundColor: '#0f141f',
-            paddingTop: 20,
-            paddingBottom: 28,
-            paddingLeft: 28,
-            paddingRight: 28
-          },
-          columns: [
-            {
-              id: 'col-monetter-cta',
+              id: 'col-monetter-cards',
               widthPercentage: 100,
               style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
               blocks: [
                 {
-                  id: 'blk-monetter-free-notice',
-                  type: 'text',
-                  content: {
-                    text: 'O acesso ao grupo é gratuito.'
-                  },
-                  style: {
-                    color: '#4ade80',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    textAlign: 'center',
-                    marginTop: 0,
-                    marginBottom: 16
-                  },
-                  deviceVisibility: 'all'
-                },
-                {
-                  id: 'blk-monetter-btn-cta',
-                  type: 'button',
-                  content: {
-                    text: '👇 [QUERO ENTRAR NO GRUPO]',
-                    link: 'https://chat.whatsapp.com/exemplo-grupo-vip-ph'
-                  },
-                  style: {
-                    backgroundColor: '#ff6b00',
-                    color: '#ffffff',
-                    fontSize: 17,
-                    fontWeight: 800,
-                    borderRadius: 8,
-                    paddingTop: 18,
-                    paddingBottom: 18,
-                    paddingLeft: 32,
-                    paddingRight: 32,
-                    textAlign: 'center',
-                    width: '100%',
-                    marginTop: 0,
-                    marginBottom: 12
-                  },
-                  deviceVisibility: 'all'
-                },
-                {
-                  id: 'blk-monetter-scarcity-subtext',
-                  type: 'text',
-                  content: {
-                    text: '🔒 Grupo VIP restrito • Link oficial com acesso direto ao WhatsApp'
-                  },
-                  style: {
-                    color: '#64748b',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    marginTop: 0,
-                    marginBottom: 0
-                  },
-                  deviceVisibility: 'all'
-                }
-              ]
-            }
-          ]
-        },
-        // 7. Seção: O que você vai dominar na Super Live
-        {
-          id: 'row-monetter-learnings',
-          layout: '1-col',
-          style: {
-            backgroundColor: '#0a0e16',
-            paddingTop: 30,
-            paddingBottom: 24,
-            paddingLeft: 28,
-            paddingRight: 28
-          },
-          columns: [
-            {
-              id: 'col-monetter-learnings',
-              widthPercentage: 100,
-              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
-              blocks: [
-                {
-                  id: 'blk-learnings-title',
+                  id: 'blk-cards-section-title',
                   type: 'heading',
                   content: {
                     text: 'O que o PH vai entregar para você:',
@@ -389,45 +233,90 @@ export const INITIAL_TEMPLATES: TemplateModel[] = [
                   },
                   style: {
                     color: '#ffffff',
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: 800,
                     textAlign: 'center',
-                    marginTop: 0,
+                    marginTop: 8,
                     marginBottom: 20
                   },
                   deviceVisibility: 'all'
                 },
+                // Card 1: Erros que travam seus resultados
                 {
-                  id: 'blk-learnings-list',
+                  id: 'blk-card-1',
                   type: 'html',
                   content: {
                     html: `
-                      <table width="100%" border="0" cellpadding="0" cellspacing="0" style="color: #cbd5e1; font-size: 14px; line-height: 22px;">
-                        <tr>
-                          <td style="padding: 10px 0; border-bottom: 1px solid #1e293b;">
-                            <span style="color:#ff6b00; font-size:16px; margin-right:8px;">🎯</span>
-                            <strong>Como Recuperar o seu Loss:</strong> A mentalidade e o plano de ação correto para estancar perdas.
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 10px 0; border-bottom: 1px solid #1e293b;">
-                            <span style="color:#ff6b00; font-size:16px; margin-right:8px;">🛡️</span>
-                            <strong>Gestão de Risco Blindada:</strong> Como proteger seu saldo para nunca quebrar a banca.
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 10px 0; border-bottom: 1px solid #1e293b;">
-                            <span style="color:#ff6b00; font-size:16px; margin-right:8px;">📊</span>
-                            <strong>Erros Ocultos nas Corretoras:</strong> O que você faz sem perceber que favorece a casa.
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 10px 0;">
-                            <span style="color:#ff6b00; font-size:16px; margin-right:8px;">🎁</span>
-                            <strong>10 Premiações ao Vivo:</strong> Dinâmicas especiais exclusivas para quem estiver acompanhando.
-                          </td>
-                        </tr>
-                      </table>
+                      <div style="background-color: #101522; border: 1px solid #1e293d; border-radius: 12px; padding: 14px 18px; margin-bottom: 12px;">
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="46" align="center" style="vertical-align: middle;">
+                              <span style="display:inline-block; width:38px; height:38px; line-height:38px; text-align:center; background:rgba(255,107,0,0.12); border:1px solid #ff6b00; border-radius:50%; font-size:18px;">🎯</span>
+                            </td>
+                            <td width="16" align="center" style="vertical-align: middle;">
+                              <div style="width: 2px; height: 38px; background-color: #ff6b00; opacity: 0.8; margin: 0 auto;"></div>
+                            </td>
+                            <td style="vertical-align: middle; padding-left: 8px;">
+                              <h4 style="color: #ffffff; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">Erros que travam seus resultados</h4>
+                              <p style="color: #94a3b8; font-size: 13px; line-height: 18px; margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">Entenda o que faz tantos traders perderem dinheiro sem perceber.</p>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                },
+                // Card 2: Estratégias práticas de análise
+                {
+                  id: 'blk-card-2',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <div style="background-color: #101522; border: 1px solid #1e293d; border-radius: 12px; padding: 14px 18px; margin-bottom: 12px;">
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="46" align="center" style="vertical-align: middle;">
+                              <span style="display:inline-block; width:38px; height:38px; line-height:38px; text-align:center; background:rgba(255,107,0,0.12); border:1px solid #ff6b00; border-radius:50%; font-size:18px;">📊</span>
+                            </td>
+                            <td width="16" align="center" style="vertical-align: middle;">
+                              <div style="width: 2px; height: 38px; background-color: #ff6b00; opacity: 0.8; margin: 0 auto;"></div>
+                            </td>
+                            <td style="vertical-align: middle; padding-left: 8px;">
+                              <h4 style="color: #ffffff; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">Estratégias práticas de análise</h4>
+                              <p style="color: #94a3b8; font-size: 13px; line-height: 18px; margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">Aprenda leituras e decisões mais conscientes para o mercado.</p>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                },
+                // Card 3: Gestão de risco profissional
+                {
+                  id: 'blk-card-3',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <div style="background-color: #101522; border: 1px solid #1e293d; border-radius: 12px; padding: 14px 18px; margin-bottom: 8px;">
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="46" align="center" style="vertical-align: middle;">
+                              <span style="display:inline-block; width:38px; height:38px; line-height:38px; text-align:center; background:rgba(255,107,0,0.12); border:1px solid #ff6b00; border-radius:50%; font-size:18px;">🛡️</span>
+                            </td>
+                            <td width="16" align="center" style="vertical-align: middle;">
+                              <div style="width: 2px; height: 38px; background-color: #ff6b00; opacity: 0.8; margin: 0 auto;"></div>
+                            </td>
+                            <td style="vertical-align: middle; padding-left: 8px;">
+                              <h4 style="color: #ffffff; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">Gestão de risco profissional</h4>
+                              <p style="color: #94a3b8; font-size: 13px; line-height: 18px; margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">Saiba como proteger melhor sua banca e evitar decisões por impulso.</p>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
                     `
                   },
                   style: { marginTop: 0, marginBottom: 0 },
@@ -437,85 +326,111 @@ export const INITIAL_TEMPLATES: TemplateModel[] = [
             }
           ]
         },
-        // 8. Botão Secundário de Reforço
+        // 6. Seção com BACKGROUND DE GRÁFICOS (Candlesticks), Box da Live, CTA 2 e Rodapé Oficial
         {
-          id: 'row-monetter-cta-2',
+          id: 'row-monetter-charts-section',
           layout: '1-col',
           style: {
-            backgroundColor: '#0a0e16',
-            paddingTop: 8,
-            paddingBottom: 32,
-            paddingLeft: 28,
-            paddingRight: 28
-          },
-          columns: [
-            {
-              id: 'col-monetter-cta-2',
-              widthPercentage: 100,
-              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
-              blocks: [
-                {
-                  id: 'blk-monetter-btn-2',
-                  type: 'button',
-                  content: {
-                    text: 'GARANTIR MINHA VAGA NO GRUPO VIP ➜',
-                    link: 'https://chat.whatsapp.com/exemplo-grupo-vip-ph'
-                  },
-                  style: {
-                    backgroundColor: '#ff6b00',
-                    color: '#ffffff',
-                    fontSize: 16,
-                    fontWeight: 800,
-                    borderRadius: 8,
-                    paddingTop: 16,
-                    paddingBottom: 16,
-                    paddingLeft: 28,
-                    paddingRight: 28,
-                    textAlign: 'center',
-                    width: '100%',
-                    marginTop: 0,
-                    marginBottom: 0
-                  },
-                  deviceVisibility: 'all'
-                }
-              ]
-            }
-          ]
-        },
-        // 9. Rodapé / Disclaimer Financeiro Profissional (Compliance)
-        {
-          id: 'row-monetter-footer',
-          layout: '1-col',
-          style: {
-            backgroundColor: '#05070a',
-            paddingTop: 28,
-            paddingBottom: 28,
+            backgroundColor: '#07090e',
+            backgroundImage: '/templates/monetter/chart-candlestick-bg.svg',
+            backgroundSize: '100% 100%',
+            backgroundPosition: 'center bottom',
+            backgroundRepeat: 'no-repeat',
+            paddingTop: 24,
+            paddingBottom: 40,
             paddingLeft: 24,
             paddingRight: 24
           },
           columns: [
             {
-              id: 'col-monetter-footer',
+              id: 'col-monetter-charts-content',
               widthPercentage: 100,
               style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
               blocks: [
+                // Box da Super Live com PH com borda neon e ícone calendário
                 {
-                  id: 'blk-monetter-footer-text',
+                  id: 'blk-schedule-glowing-box',
                   type: 'html',
                   content: {
                     html: `
-                      <div style="text-align: center; font-size: 11px; line-height: 18px; color: #64748b;">
-                        <p style="margin: 0 0 10px 0; color: #94a3b8; font-weight: 700;">
-                          MONETTER • NEGOCIE MAIS ATIVOS
+                      <div style="background: rgba(11, 15, 25, 0.92); border: 1.5px solid #ff6b00; border-radius: 16px; padding: 22px 24px; box-shadow: 0 0 30px rgba(255, 107, 0, 0.25); margin-bottom: 24px;">
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="64" align="center" style="vertical-align: middle;">
+                              <div style="width: 52px; height: 52px; border: 1.5px solid #ff6b00; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 107, 0, 0.1);">
+                                <span style="font-size: 26px; line-height: 52px; display: block; text-align: center;">📅</span>
+                              </div>
+                            </td>
+                            <td style="vertical-align: middle; padding-left: 16px;">
+                              <h3 style="color: #ffffff; font-size: 19px; font-weight: 800; margin: 0 0 6px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">Super Live com PH</h3>
+                              <p style="color: #ff8a00; font-size: 14px; font-weight: 700; margin: 0 0 3px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">
+                                🗓️ Dias 19 e 20/11
+                              </p>
+                              <p style="color: #cbd5e1; font-size: 14px; font-weight: 600; margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">
+                                🕒 12h às 14h &nbsp;•&nbsp; 20h às 22h
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                },
+                // Botão de Alta Conversão "GARANTIR MEU ACESSO >>"
+                {
+                  id: 'blk-btn-garantir-acesso',
+                  type: 'button',
+                  content: {
+                    text: 'GARANTIR MEU ACESSO >>',
+                    link: 'https://chat.whatsapp.com/exemplo-grupo-vip-ph'
+                  },
+                  style: {
+                    backgroundColor: '#ff6b00',
+                    color: '#ffffff',
+                    fontSize: 18,
+                    fontWeight: 800,
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 32,
+                    paddingRight: 32,
+                    textAlign: 'center',
+                    width: '100%',
+                    marginTop: 0,
+                    marginBottom: 32
+                  },
+                  deviceVisibility: 'all'
+                },
+                // Rodapé Oficial Monetter com disclaimer e assinatura
+                {
+                  id: 'blk-footer-monetter-official',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <div style="text-align: center; padding-top: 10px;">
+                        <!-- Logo Monetter Oficial -->
+                        <div style="margin-bottom: 10px;">
+                          <span style="color: #ffffff; font-size: 17px; font-weight: 800; letter-spacing: 0.5px; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">
+                            <span style="color: #ff6b00; font-size: 20px; vertical-align: middle; margin-right: 4px;">◈</span>Monetter
+                          </span>
+                          <div style="color: #ff6b00; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;">
+                            NEGOCIE MAIS ATIVOS
+                          </div>
+                        </div>
+
+                        <!-- Tagline & Disclaimer exatamente como na imagem -->
+                        <p style="color: #cbd5e1; font-size: 13px; font-style: italic; margin: 0 0 6px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">
+                          Monetter — Visão de Gigante
                         </p>
-                        <p style="margin: 0 0 12px 0;">
-                          <strong>Aviso Legal de Risco:</strong> Operações nos mercados de trading, opções, futuros e ativos digitais envolvem risco financeiro significativo de perda. O conteúdo da Super Live tem finalidade exclusivamente educacional e de treinamento de estratégias de gestão de risco, não configurando promessa de lucros ou recomendação direta de investimentos.
+                        <p style="color: #64748b; font-size: 11px; font-style: italic; line-height: 16px; margin: 0 0 16px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">
+                          Trading envolve riscos. Premiações sujeitas a regulamento.
                         </p>
-                        <p style="margin: 0 0 8px 0;">
-                          © 2026 Monetter. Todos os direitos reservados.
-                        </p>
-                        <p style="margin: 0;">
-                          <a href="#" style="color: #64748b; text-decoration: underline;">Gerenciar Notificações</a> &nbsp;|&nbsp; 
+
+                        <!-- Links de descadastro -->
+                        <p style="margin: 0; font-size: 11px; color: #475569;">
+                          <a href="#" style="color: #64748b; text-decoration: underline;">Gerenciar Preferências</a> &nbsp;|&nbsp; 
                           <a href="#" style="color: #64748b; text-decoration: underline;">Descadastrar</a>
                         </p>
                       </div>

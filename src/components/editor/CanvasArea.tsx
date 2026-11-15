@@ -550,9 +550,10 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
             )}
 
             {block.type === 'html' && (
-              <div className="my-2 p-3 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-xs font-mono text-slate-600 overflow-x-auto">
-                {block.content.code}
-              </div>
+              <div 
+                className="my-2 overflow-hidden"
+                dangerouslySetInnerHTML={{ __html: block.content.html || block.content.code || '<!-- Bloco HTML -->' }}
+              />
             )}
           </div>
         </div>
@@ -615,6 +616,10 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                 }}
                 style={{
                   backgroundColor: row.style.backgroundColor || 'transparent',
+                  backgroundImage: row.style.backgroundImage ? `url('${row.style.backgroundImage}')` : undefined,
+                  backgroundSize: row.style.backgroundSize || 'cover',
+                  backgroundPosition: row.style.backgroundPosition || 'center',
+                  backgroundRepeat: row.style.backgroundRepeat || 'no-repeat',
                   paddingTop: `${row.style.paddingTop ?? 16}px`,
                   paddingBottom: `${row.style.paddingBottom ?? 16}px`,
                   paddingLeft: `${row.style.paddingLeft ?? 24}px`,
