@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Trash2, Copy, ArrowUp, ArrowDown, BookmarkPlus, 
   Plus, Move, GripVertical, Check, ExternalLink, Play, LayoutGrid, Upload,
-  Bold, Italic, Underline
+  Bold, Italic, Underline, Palette, ChevronDown, RotateCcw
 } from 'lucide-react';
 import { EmailBlock, EmailRow, EmailColumn, EmailDocument, DeviceVisibility } from '../../types/email';
 import { compressImageFile } from '../../utils/imageOptimizer';
@@ -59,7 +59,45 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
   const [dropTarget, setDropTarget] = useState<DropTargetState | null>(null);
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
 
-  // Floating text selection toolbar (Bold, Italic, Underline)
+  // Quick colors for one-click styling on selection
+  const QUICK_COLOR_DOTS = [
+    { label: 'Branco', hex: '#ffffff' },
+    { label: 'Laranja Monetter', hex: '#ff6b00' },
+    { label: 'Amarelo Ouro', hex: '#f59e0b' },
+    { label: 'Verde Sucesso', hex: '#10b981' },
+  ];
+
+  const ALL_SWATCH_COLORS = [
+    { label: 'Branco', hex: '#ffffff' },
+    { label: 'Preto', hex: '#000000' },
+    { label: 'Laranja Monetter', hex: '#ff6b00' },
+    { label: 'Laranja Vivo', hex: '#ea580c' },
+    { label: 'Amarelo Ouro', hex: '#f59e0b' },
+    { label: 'Verde Sucesso', hex: '#10b981' },
+    { label: 'Azul Claro', hex: '#38bdf8' },
+    { label: 'Azul Royal', hex: '#2563eb' },
+    { label: 'Índigo', hex: '#6366f1' },
+    { label: 'Rosa Pink', hex: '#ec4899' },
+    { label: 'Vermelho / Loss', hex: '#ef4444' },
+    { label: 'Cinza Claro', hex: '#94a3b8' },
+    { label: 'Cinza Médio', hex: '#64748b' },
+    { label: 'Cinza Escuro', hex: '#1e293b' },
+  ];
+
+  const rgbToHex = (rgb: string): string => {
+    if (!rgb) return '#ff6b00';
+    if (rgb.startsWith('#')) return rgb;
+    const match = rgb.match(/\d+/g);
+    if (match && match.length >= 3) {
+      const r = parseInt(match[0], 10).toString(16).padStart(2, '0');
+      const g = parseInt(match[1], 10).toString(16).padStart(2, '0');
+      const b = parseInt(match[2], 10).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+    return rgb;
+  };
+
+  // Floating text selection toolbar (Bold, Italic, Underline, and Color)
   const [selectionToolbar, setSelectionToolbar] = useState<{
     visible: boolean;
     x: number;
@@ -67,65 +105,82 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
     isBold: boolean;
     isItalic: boolean;
     isUnderline: boolean;
+    showColorPicker: boolean;
+    currentColor: string;
   }>({
     visible: false,
     x: 0,
     y: 0,
     isBold: false,
     isItalic: false,
-    isUnderline: false
+    isUnderline: false,
+    showColorPicker: false,
+    currentColor: '#ff6b00'
   });
+  const [customHexColor, setCustomHexColor] = useState<string>('#ff6b00');
   const mainRef = useRef<HTMLElement | null>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+  const activeEditableRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const handleSelectionUpdate = () => {
       const selection = window.getSelection();
       if (!selection || selection.isCollapsed || !selection.rangeCount) {
-        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false, showColorPicker: false } : prev);
         return;
       }
 
       const text = selection.toString().trim();
       if (!text) {
-        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false, showColorPicker: false } : prev);
         return;
       }
 
       const anchor = selection.anchorNode;
       const parent = anchor?.nodeType === Node.ELEMENT_NODE ? (anchor as HTMLElement) : anchor?.parentElement;
-      const editable = parent?.closest('[contenteditable="true"]');
+      const editable = parent?.closest('[contenteditable="true"]') as HTMLElement | null;
       if (!editable || !mainRef.current?.contains(editable)) {
-        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false, showColorPicker: false } : prev);
         return;
       }
 
       const range = selection.getRangeAt(0);
+      savedRangeRef.current = range.cloneRange();
+      activeEditableRef.current = editable;
+
       const rect = range.getBoundingClientRect();
       if (!rect || (rect.width === 0 && rect.height === 0)) {
-        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+        setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false, showColorPicker: false } : prev);
         return;
       }
 
       let isBold = false;
       let isItalic = false;
       let isUnderline = false;
+      let currentColor = '#ff6b00';
       try {
         isBold = document.queryCommandState('bold');
         isItalic = document.queryCommandState('italic');
         isUnderline = document.queryCommandState('underline');
+        const cmdColor = document.queryCommandValue('foreColor');
+        if (cmdColor) {
+          currentColor = rgbToHex(cmdColor);
+        }
       } catch (e) {}
 
-      const clampedX = Math.max(140, Math.min(window.innerWidth - 140, rect.left + rect.width / 2));
+      const clampedX = Math.max(160, Math.min(window.innerWidth - 160, rect.left + rect.width / 2));
       const targetY = Math.max(70, rect.top - 12);
 
-      setSelectionToolbar({
+      setSelectionToolbar(prev => ({
+        ...prev,
         visible: true,
         x: clampedX,
         y: targetY,
         isBold,
         isItalic,
-        isUnderline
-      });
+        isUnderline,
+        currentColor: currentColor || prev.currentColor
+      }));
     };
 
     const handleMouseUp = () => {
@@ -139,7 +194,7 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
     };
 
     const handleScroll = () => {
-      setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false } : prev);
+      setSelectionToolbar(prev => prev.visible ? { ...prev, visible: false, showColorPicker: false } : prev);
     };
 
     document.addEventListener('selectionchange', handleSelectionUpdate);
@@ -160,7 +215,57 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
     };
   }, []);
 
+  const syncBlockContent = (editableEl?: HTMLElement | null) => {
+    const selection = window.getSelection();
+    const anchor = selection?.anchorNode;
+    const parent = anchor?.nodeType === Node.ELEMENT_NODE ? (anchor as HTMLElement) : anchor?.parentElement;
+    const editable = editableEl || activeEditableRef.current || (parent?.closest('[contenteditable="true"]') as HTMLElement | null);
+
+    if (editable) {
+      const blockId = editable.getAttribute('data-block-id');
+      const field = editable.getAttribute('data-field');
+      if (blockId) {
+        for (const row of doc.rows) {
+          for (const col of row.columns) {
+            for (const b of col.blocks) {
+              if (b.id === blockId) {
+                if (field) {
+                  onUpdateBlock({
+                    ...b,
+                    content: { 
+                      ...b.content, 
+                      [field]: editable.innerHTML 
+                    }
+                  });
+                } else {
+                  onUpdateBlock({
+                    ...b,
+                    content: { 
+                      ...b.content, 
+                      html: editable.innerHTML, 
+                      text: editable.innerText 
+                    }
+                  });
+                }
+                break;
+              }
+            }
+          }
+        }
+      }
+      editable.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+
   const handleFormatCommand = (command: 'bold' | 'italic' | 'underline') => {
+    const selection = window.getSelection();
+    if (savedRangeRef.current && selection) {
+      try {
+        selection.removeAllRanges();
+        selection.addRange(savedRangeRef.current);
+      } catch (e) {}
+    }
+
     document.execCommand(command, false);
 
     try {
@@ -172,34 +277,69 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
       }));
     } catch (e) {}
 
-    const selection = window.getSelection();
-    const anchor = selection?.anchorNode;
-    const parent = anchor?.nodeType === Node.ELEMENT_NODE ? (anchor as HTMLElement) : anchor?.parentElement;
-    const editable = parent?.closest('[contenteditable="true"]') as HTMLElement | null;
-
-    if (editable) {
-      const blockId = editable.getAttribute('data-block-id');
-      if (blockId) {
-        for (const row of doc.rows) {
-          for (const col of row.columns) {
-            for (const b of col.blocks) {
-              if (b.id === blockId) {
-                onUpdateBlock({
-                  ...b,
-                  content: { 
-                    ...b.content, 
-                    html: editable.innerHTML, 
-                    text: editable.innerText 
-                  }
-                });
-                break;
-              }
-            }
-          }
-        }
-      }
-      editable.dispatchEvent(new Event('input', { bubbles: true }));
+    if (selection && selection.rangeCount > 0) {
+      try {
+        savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+      } catch (e) {}
     }
+
+    syncBlockContent();
+  };
+
+  const handleApplyTextColor = (colorHex: string) => {
+    const selection = window.getSelection();
+    if (savedRangeRef.current && selection) {
+      try {
+        selection.removeAllRanges();
+        selection.addRange(savedRangeRef.current);
+      } catch (e) {}
+    }
+
+    try {
+      document.execCommand('foreColor', false, colorHex);
+    } catch (e) {
+      console.error('Erro ao aplicar cor no texto selecionado:', e);
+    }
+
+    if (selection && selection.rangeCount > 0) {
+      try {
+        savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+      } catch (e) {}
+    }
+
+    setSelectionToolbar(prev => ({
+      ...prev,
+      currentColor: colorHex
+    }));
+    setCustomHexColor(colorHex);
+
+    syncBlockContent();
+  };
+
+  const handleResetTextColor = () => {
+    const selection = window.getSelection();
+    if (savedRangeRef.current && selection) {
+      try {
+        selection.removeAllRanges();
+        selection.addRange(savedRangeRef.current);
+      } catch (e) {}
+    }
+
+    try {
+      const editable = activeEditableRef.current || (selection?.anchorNode?.parentElement?.closest('[contenteditable="true"]') as HTMLElement | null);
+      const defaultColor = editable ? window.getComputedStyle(editable).color : 'inherit';
+      document.execCommand('foreColor', false, defaultColor || 'inherit');
+    } catch (e) {
+      document.execCommand('removeFormat', false);
+    }
+
+    if (selection && selection.rangeCount > 0) {
+      try {
+        savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+      } catch (e) {}
+    }
+
+    syncBlockContent();
   };
 
   const { globalSettings } = doc;
@@ -742,30 +882,35 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                     <img src={block.content.logoUrl} alt="Logo" className="max-h-7 object-contain" />
                   ) : (
                     <span
+                      data-block-id={block.id}
+                      data-field="brandText"
                       contentEditable
                       suppressContentEditableWarning
-                      onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, brandText: e.currentTarget.innerText } })}
+                      onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, brandText: e.currentTarget.innerHTML } })}
+                      dangerouslySetInnerHTML={{ __html: block.content.brandText || 'MONETTER' }}
                       style={{ color: block.content.brandColor || '#ffffff', fontSize: '18px', fontWeight: 800, letterSpacing: '0.5px' }}
                       className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
-                    >
-                      {block.content.brandText || 'MONETTER'}
-                    </span>
+                    />
                   )}
                   <span
+                    data-block-id={block.id}
+                    data-field="sloganText"
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, sloganText: e.currentTarget.innerText } })}
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, sloganText: e.currentTarget.innerHTML } })}
+                    dangerouslySetInnerHTML={{ __html: block.content.sloganText || '• NEGOCIE MAIS ATIVOS' }}
                     style={{ color: block.content.sloganColor || '#ff6b00', fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}
                     className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
-                  >
-                    {block.content.sloganText || '• NEGOCIE MAIS ATIVOS'}
-                  </span>
+                  />
                 </div>
                 {block.content.badgeText && (
                   <span
+                    data-block-id={block.id}
+                    data-field="badgeText"
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, badgeText: e.currentTarget.innerText } })}
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, badgeText: e.currentTarget.innerHTML } })}
+                    dangerouslySetInnerHTML={{ __html: block.content.badgeText }}
                     style={{
                       backgroundColor: block.content.badgeBg || '#ff6b00',
                       color: block.content.badgeTextColor || '#ffffff',
@@ -777,9 +922,7 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       letterSpacing: '0.5px'
                     }}
                     className="outline-none focus:ring-1 focus:ring-white/40 cursor-text select-text"
-                  >
-                    {block.content.badgeText}
-                  </span>
+                  />
                 )}
               </div>
             )}
@@ -830,9 +973,12 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                 {/* Texts (Title & Description) with inline contentEditable */}
                 <div className="flex-1 min-w-0">
                   <h4
+                    data-block-id={block.id}
+                    data-field="title"
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, title: e.currentTarget.innerText } })}
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, title: e.currentTarget.innerHTML } })}
+                    dangerouslySetInnerHTML={{ __html: block.content.title || 'Título do Tópico' }}
                     style={{
                       color: block.content.titleColor || '#ffffff',
                       fontSize: '15px',
@@ -840,13 +986,14 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       margin: '0 0 3px 0'
                     }}
                     className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
-                  >
-                    {block.content.title || 'Título do Tópico'}
-                  </h4>
+                  />
                   <p
+                    data-block-id={block.id}
+                    data-field="description"
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, description: e.currentTarget.innerText } })}
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, description: e.currentTarget.innerHTML } })}
+                    dangerouslySetInnerHTML={{ __html: block.content.description || 'Descrição do tópico.' }}
                     style={{
                       color: block.content.descColor || '#94a3b8',
                       fontSize: '13px',
@@ -854,9 +1001,7 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       margin: 0
                     }}
                     className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
-                  >
-                    {block.content.description || 'Descrição do tópico.'}
-                  </p>
+                  />
                 </div>
               </div>
             )}
@@ -898,9 +1043,12 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                 <div className="flex-1 min-w-0">
                   {block.content.badge && (
                     <div
+                      data-block-id={block.id}
+                      data-field="badge"
                       contentEditable
                       suppressContentEditableWarning
-                      onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, badge: e.currentTarget.innerText } })}
+                      onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, badge: e.currentTarget.innerHTML } })}
+                      dangerouslySetInnerHTML={{ __html: block.content.badge }}
                       style={{
                         color: block.content.accentColor || '#ff6b00',
                         fontSize: '11px',
@@ -910,15 +1058,16 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                         marginBottom: '4px'
                       }}
                       className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
-                    >
-                      {block.content.badge}
-                    </div>
+                    />
                   )}
 
                   <h3
+                    data-block-id={block.id}
+                    data-field="title"
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, title: e.currentTarget.innerText } })}
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, title: e.currentTarget.innerHTML } })}
+                    dangerouslySetInnerHTML={{ __html: block.content.title || 'Super Live com PH' }}
                     style={{
                       color: '#ffffff',
                       fontSize: '18px',
@@ -926,14 +1075,15 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       margin: '0 0 4px 0'
                     }}
                     className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
-                  >
-                    {block.content.title || 'Super Live com PH'}
-                  </h3>
+                  />
 
                   <p
+                    data-block-id={block.id}
+                    data-field="dates"
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, dates: e.currentTarget.innerText } })}
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, dates: e.currentTarget.innerHTML } })}
+                    dangerouslySetInnerHTML={{ __html: block.content.dates || '🗓️ Dias 19 e 20/11' }}
                     style={{
                       color: block.content.accentColor || '#ff8a00',
                       fontSize: '14px',
@@ -941,14 +1091,15 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       margin: '0 0 2px 0'
                     }}
                     className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
-                  >
-                    {block.content.dates || '🗓️ Dias 19 e 20/11'}
-                  </p>
+                  />
 
                   <p
+                    data-block-id={block.id}
+                    data-field="times"
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, times: e.currentTarget.innerText } })}
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, times: e.currentTarget.innerHTML } })}
+                    dangerouslySetInnerHTML={{ __html: block.content.times || '🕒 12h às 14h • 20h às 22h' }}
                     style={{
                       color: '#cbd5e1',
                       fontSize: '13px',
@@ -956,9 +1107,7 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       margin: 0
                     }}
                     className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
-                  >
-                    {block.content.times || '🕒 12h às 14h • 20h às 22h'}
-                  </p>
+                  />
                 </div>
               </div>
             )}
@@ -1162,10 +1311,10 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
 
       </div>
 
-      {/* Floating Rich-Text Selection Toolbar (Bold, Italic, Underline) */}
+      {/* Floating Rich-Text Selection Toolbar (Bold, Italic, Underline, and Color) */}
       {selectionToolbar.visible && (
         <div 
-          className="fixed z-[9999] bg-slate-900/95 text-white backdrop-blur-md px-2 py-1.5 rounded-xl shadow-2xl border border-slate-700/80 flex items-center gap-1 select-none animate-in fade-in zoom-in-95 duration-100"
+          className="fixed z-[9999] flex flex-col items-center select-none"
           style={{ 
             left: `${selectionToolbar.x}px`, 
             top: `${selectionToolbar.y}px`, 
@@ -1176,67 +1325,221 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
             e.stopPropagation();
           }}
         >
-          {/* Bold Button */}
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              handleFormatCommand('bold');
-            }}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
-              selectionToolbar.isBold 
-                ? 'bg-indigo-600 text-white shadow-xs' 
-                : 'text-slate-200 hover:text-white hover:bg-slate-800'
-            }`}
-            title="Negrito (Bold) - Ctrl+B"
-          >
-            <Bold className="w-4 h-4 stroke-[2.5]" />
-            <span className="text-[11px] font-bold">Bold</span>
-          </button>
+          {/* Main Toolbar Pill */}
+          <div className="bg-slate-900/95 text-white backdrop-blur-md px-2 py-1.5 rounded-xl shadow-2xl border border-slate-700/80 flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-100">
+            {/* Bold Button */}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleFormatCommand('bold');
+              }}
+              className={`px-2 py-1 rounded-lg flex items-center gap-1 text-xs font-bold transition-all cursor-pointer ${
+                selectionToolbar.isBold 
+                  ? 'bg-indigo-600 text-white shadow-xs' 
+                  : 'text-slate-200 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Negrito (Bold) - Ctrl+B"
+            >
+              <Bold className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span className="text-[11px] font-bold">Bold</span>
+            </button>
 
-          <div className="w-px h-4 bg-slate-700/80" />
+            <div className="w-px h-4 bg-slate-700/80" />
 
-          {/* Italic Button */}
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              handleFormatCommand('italic');
-            }}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs italic transition-all cursor-pointer ${
-              selectionToolbar.isItalic 
-                ? 'bg-indigo-600 text-white shadow-xs' 
-                : 'text-slate-200 hover:text-white hover:bg-slate-800'
-            }`}
-            title="Itálico (Italic) - Ctrl+I"
-          >
-            <Italic className="w-4 h-4 stroke-[2.5]" />
-            <span className="text-[11px] font-semibold">Italic</span>
-          </button>
+            {/* Italic Button */}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleFormatCommand('italic');
+              }}
+              className={`px-2 py-1 rounded-lg flex items-center gap-1 text-xs italic transition-all cursor-pointer ${
+                selectionToolbar.isItalic 
+                  ? 'bg-indigo-600 text-white shadow-xs' 
+                  : 'text-slate-200 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Itálico (Italic) - Ctrl+I"
+            >
+              <Italic className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span className="text-[11px] font-semibold">Italic</span>
+            </button>
 
-          <div className="w-px h-4 bg-slate-700/80" />
+            <div className="w-px h-4 bg-slate-700/80" />
 
-          {/* Underline Button */}
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              handleFormatCommand('underline');
-            }}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs underline transition-all cursor-pointer ${
-              selectionToolbar.isUnderline 
-                ? 'bg-indigo-600 text-white shadow-xs' 
-                : 'text-slate-200 hover:text-white hover:bg-slate-800'
-            }`}
-            title="Sublinhado (Underline) - Ctrl+U"
-          >
-            <Underline className="w-4 h-4 stroke-[2.5]" />
-            <span className="text-[11px] font-semibold">Underline</span>
-          </button>
+            {/* Underline Button */}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleFormatCommand('underline');
+              }}
+              className={`px-2 py-1 rounded-lg flex items-center gap-1 text-xs underline transition-all cursor-pointer ${
+                selectionToolbar.isUnderline 
+                  ? 'bg-indigo-600 text-white shadow-xs' 
+                  : 'text-slate-200 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Sublinhado (Underline) - Ctrl+U"
+            >
+              <Underline className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span className="text-[11px] font-semibold">Underline</span>
+            </button>
+
+            <div className="w-px h-4 bg-slate-700/80" />
+
+            {/* Fast 1-click Quick Color Dots */}
+            <div className="flex items-center gap-1 px-0.5">
+              {QUICK_COLOR_DOTS.map(dot => (
+                <button
+                  key={dot.hex}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleApplyTextColor(dot.hex);
+                  }}
+                  className="w-4 h-4 rounded-full border border-white/40 hover:scale-125 transition-transform cursor-pointer shadow-xs shrink-0"
+                  style={{ backgroundColor: dot.hex }}
+                  title={`Colorir apenas seleção com ${dot.label} (${dot.hex})`}
+                />
+              ))}
+            </div>
+
+            <div className="w-px h-4 bg-slate-700/80" />
+
+            {/* Color Palette Toggle Button */}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectionToolbar(prev => ({ ...prev, showColorPicker: !prev.showColorPicker }));
+              }}
+              className={`px-2 py-1 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-all cursor-pointer ${
+                selectionToolbar.showColorPicker 
+                  ? 'bg-indigo-600 text-white shadow-xs' 
+                  : 'text-slate-200 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Escolher cor personalizada para o texto selecionado"
+            >
+              <Palette className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px] font-semibold">Cor</span>
+              <div 
+                className="w-2.5 h-2.5 rounded-full border border-white/40 shrink-0" 
+                style={{ backgroundColor: selectionToolbar.currentColor || '#ff6b00' }} 
+              />
+              <ChevronDown className={`w-3 h-3 transition-transform ${selectionToolbar.showColorPicker ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* Color Palette Popover */}
+          {selectionToolbar.showColorPicker && (
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-slate-900/98 border border-slate-700/90 rounded-xl p-3 shadow-2xl backdrop-blur-md w-64 text-slate-100 z-50 animate-in fade-in zoom-in-95"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-2.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                  <Palette className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Cor do Texto Selecionado</span>
+                </div>
+                <span className="text-[9px] text-amber-300 font-mono font-bold bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.5 rounded">
+                  Apenas Seleção
+                </span>
+              </div>
+
+              {/* Swatches Grid */}
+              <div className="text-[10px] text-slate-400 font-medium mb-1.5">Cores rápidas:</div>
+              <div className="grid grid-cols-7 gap-1.5 mb-3">
+                {ALL_SWATCH_COLORS.map(c => {
+                  const isSelected = (selectionToolbar.currentColor || '').toLowerCase() === c.hex.toLowerCase();
+                  return (
+                    <button
+                      key={c.hex}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleApplyTextColor(c.hex);
+                      }}
+                      className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all hover:scale-110 cursor-pointer ${
+                        isSelected ? 'ring-2 ring-indigo-400 ring-offset-1 ring-offset-slate-900 border-white' : 'border-slate-700/80 hover:border-white/60'
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                      title={`${c.label} (${c.hex})`}
+                    >
+                      {isSelected && (
+                        <Check className={`w-3 h-3 ${c.hex === '#ffffff' ? 'text-black' : 'text-white'}`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom HEX Color Picker */}
+              <div className="text-[10px] text-slate-400 font-medium mb-1.5">Cor personalizada:</div>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <div className="relative shrink-0">
+                  <input
+                    type="color"
+                    value={customHexColor}
+                    onChange={(e) => {
+                      setCustomHexColor(e.target.value);
+                      handleApplyTextColor(e.target.value);
+                    }}
+                    className="w-7 h-7 rounded-lg cursor-pointer border border-slate-700 p-0 bg-transparent"
+                    title="Abrir seletor visual do sistema"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={customHexColor}
+                  onChange={(e) => setCustomHexColor(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleApplyTextColor(customHexColor);
+                    }
+                  }}
+                  placeholder="#FF6B00"
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono uppercase text-white focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleApplyTextColor(customHexColor);
+                  }}
+                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shadow-xs"
+                >
+                  OK
+                </button>
+              </div>
+
+              {/* Reset to Default Block Color Button */}
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleResetTextColor();
+                }}
+                className="w-full py-1.5 px-2 bg-slate-800 hover:bg-slate-700/80 text-slate-300 hover:text-white rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors border border-slate-700/60 cursor-pointer"
+                title="Remove a cor específica das palavras selecionadas e volta para a cor padrão do bloco"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                <span>Restaurar Cor Padrão do Bloco</span>
+              </button>
+            </div>
+          )}
 
           {/* Indicator triangle */}
           <div 
-            className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-3 h-3 bg-slate-900/95 border-r border-b border-slate-700/80 rotate-45 pointer-events-none" 
+            className="w-3 h-3 bg-slate-900/95 border-r border-b border-slate-700/80 rotate-45 -mt-1.5 pointer-events-none" 
           />
         </div>
       )}

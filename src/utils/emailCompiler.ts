@@ -569,8 +569,8 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
                 <div style="width: 2px; height: 38px; background-color: ${dividerColor}; opacity: 0.8; margin: 0 auto;"></div>
               </td>
               <td style="vertical-align: middle; padding-left: 8px;">
-                <h4 style="color: ${titleColor}; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: ${defaultFont};">${escapeHtml(title)}</h4>
-                <p style="color: ${descColor}; font-size: 13px; line-height: 18px; margin: 0; font-family: ${defaultFont};">${escapeHtml(description)}</p>
+                <h4 style="color: ${titleColor}; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: ${defaultFont};">${renderSafeRichText(title)}</h4>
+                <p style="color: ${descColor}; font-size: 13px; line-height: 18px; margin: 0; font-family: ${defaultFont};">${renderSafeRichText(description)}</p>
               </td>
             </tr>
           </table>
@@ -602,13 +602,13 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
                 </div>
               </td>
               <td style="vertical-align: middle; padding-left: 16px;">
-                ${badge ? `<div style="color: ${accentColor}; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-family: ${defaultFont};">${escapeHtml(badge)}</div>` : ''}
-                <h3 style="color: #ffffff; font-size: 19px; font-weight: 800; margin: 0 0 6px 0; font-family: ${defaultFont};">${escapeHtml(title)}</h3>
+                ${badge ? `<div style="color: ${accentColor}; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-family: ${defaultFont};">${renderSafeRichText(badge)}</div>` : ''}
+                <h3 style="color: #ffffff; font-size: 19px; font-weight: 800; margin: 0 0 6px 0; font-family: ${defaultFont};">${renderSafeRichText(title)}</h3>
                 <p style="color: ${accentColor}; font-size: 14px; font-weight: 700; margin: 0 0 3px 0; font-family: ${defaultFont};">
-                  ${escapeHtml(dates)}
+                  ${renderSafeRichText(dates)}
                 </p>
                 <p style="color: #cbd5e1; font-size: 14px; font-weight: 600; margin: 0; font-family: ${defaultFont};">
-                  ${escapeHtml(times)}
+                  ${renderSafeRichText(times)}
                 </p>
               </td>
             </tr>
@@ -624,6 +624,15 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
     default:
       return `<div style="padding: 8px; font-family: ${defaultFont}; font-size: 14px; color: #666;">Bloco ${type}</div>`;
   }
+}
+
+function renderSafeRichText(str: string): string {
+  if (!str) return '';
+  // If string contains basic HTML markup like <b>, <strong>, <i>, <em>, <u>, <font>, <span>, <br>, allow them through
+  if (/<(b|i|u|strong|em|font|span|br)[\s\/>]/i.test(str)) {
+    return str;
+  }
+  return escapeHtml(str);
 }
 
 function escapeHtml(str: string): string {

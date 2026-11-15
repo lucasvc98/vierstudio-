@@ -840,6 +840,17 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                   >
                     U
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = block.content.html || block.content.text || '';
+                      updateContent({ html: `<font color="#ff6b00">${cur || 'Destaque'}</font>`, text: cur });
+                    }}
+                    className="px-1.5 py-0.5 text-[10px] bg-orange-50 hover:bg-orange-100 text-orange-600 rounded font-bold border border-orange-200"
+                    title="Envolver em Laranja Monetter <font color='#ff6b00'>"
+                  >
+                    🎨 Laranja
+                  </button>
                 </div>
               </div>
               <textarea
@@ -1681,7 +1692,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         {/* Color picker for text blocks */}
         {(block.type === 'heading' || block.type === 'text') && (
           <div>
-            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor do Texto</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] font-semibold text-slate-700">Cor do Bloco Inteiro (Padrão)</label>
+              <span className="text-[10px] text-indigo-600 font-medium">Bloco Todo</span>
+            </div>
             <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
               <input
                 type="color"
@@ -1696,6 +1710,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                 className="w-full text-xs font-mono focus:outline-none uppercase"
               />
             </div>
+            <p className="text-[10px] text-slate-500 mt-1 leading-tight">
+              💡 <strong className="text-slate-700">Colorir palavras específicas:</strong> Selecione o texto desejado diretamente no e-mail e escolha a cor na barra flutuante!
+            </p>
           </div>
         )}
 
