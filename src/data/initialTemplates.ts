@@ -300,10 +300,6 @@ export const INITIAL_TEMPLATES: TemplateModel[] = [
           layout: '1-col',
           style: {
             backgroundColor: '#07090e',
-            backgroundImage: '/templates/monetter/chart-candlestick-bg.svg',
-            backgroundSize: '100% 100%',
-            backgroundPosition: 'center bottom',
-            backgroundRepeat: 'no-repeat',
             paddingTop: 24,
             paddingBottom: 40,
             paddingLeft: 24,

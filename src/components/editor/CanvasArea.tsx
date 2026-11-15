@@ -832,7 +832,13 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
   return (
     <main 
       className="flex-1 h-full min-h-0 overflow-y-auto p-8 flex flex-col items-center justify-start select-text pb-40"
-      style={{ backgroundColor: globalSettings.bodyBgColor || '#f4f5f8' }}
+      style={{ 
+        backgroundColor: globalSettings.bodyBgColor || '#f4f5f8',
+        backgroundImage: globalSettings.bodyBgImage ? `url('${globalSettings.bodyBgImage}')` : undefined,
+        backgroundSize: globalSettings.bodyBgSize || 'cover',
+        backgroundPosition: globalSettings.bodyBgPosition || 'center top',
+        backgroundRepeat: globalSettings.bodyBgRepeat || 'no-repeat'
+      }}
       onClick={() => {
         // Deselect when clicking outside canvas container
         onSelectRow({} as any);

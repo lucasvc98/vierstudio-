@@ -41,7 +41,7 @@ export function compileEmailHtml(doc: EmailDocument): string {
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; max-width: 100%; height: auto; }
-    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; background-color: ${bodyBg}; font-family: ${defaultFont}; }
+    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; background-color: ${bodyBg}; ${globalSettings.bodyBgImage ? `background-image: url('${globalSettings.bodyBgImage}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''} font-family: ${defaultFont}; }
     a { color: ${defaultLink}; text-decoration: none; }
     
     /* Responsive Queries */
@@ -74,7 +74,7 @@ export function compileEmailHtml(doc: EmailDocument): string {
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: ${bodyBg}; font-family: ${defaultFont}; color: ${defaultText}; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: ${bodyBg}; ${globalSettings.bodyBgImage ? `background-image: url('${globalSettings.bodyBgImage}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''} font-family: ${defaultFont}; color: ${defaultText}; -webkit-font-smoothing: antialiased;">
   <!-- PREHEADER TRICK -->
   ${preheaderText ? `
   <div style="display: none; max-height: 0px; overflow: hidden; mso-hide: all; font-size: 1px; line-height: 1px; max-width: 0px; opacity: 0;">
@@ -83,7 +83,7 @@ export function compileEmailHtml(doc: EmailDocument): string {
   </div>` : ''}
 
   <!-- OUTER BACKGROUND WRAPPER -->
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${bodyBg};">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${bodyBg}; ${globalSettings.bodyBgImage ? `background-image: url('${globalSettings.bodyBgImage}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''}">
     <tr>
       <td align="center" style="padding: 24px 12px;">
         <!--[if (gte mso 9)|(IE)]>
@@ -93,7 +93,7 @@ export function compileEmailHtml(doc: EmailDocument): string {
         <![endif]-->
         
         <!-- MAIN CONTAINER -->
-        <table role="presentation" class="email-container" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: ${containerWidth}px; background-color: ${contentBg}; border-radius: ${globalSettings.containerRadius || 8}px; overflow: hidden; border: ${globalSettings.containerBorderWidth || 0}px solid ${globalSettings.containerBorderColor || '#e2e8f0'}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        <table role="presentation" class="email-container" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: ${containerWidth}px; background-color: ${contentBg}; ${globalSettings.contentBgImage ? `background-image: url('${globalSettings.contentBgImage}'); background-size: cover; background-position: center;` : ''} border-radius: ${globalSettings.containerRadius || 8}px; overflow: hidden; border: ${globalSettings.containerBorderWidth || 0}px solid ${globalSettings.containerBorderColor || '#e2e8f0'}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           ${rowsHtml}
         </table>
         

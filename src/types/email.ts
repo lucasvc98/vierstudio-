@@ -112,6 +112,10 @@ export interface EmailRow {
 export interface GlobalEmailSettings {
   containerWidth: number; // default 600
   bodyBgColor: string; // default #f4f5f8
+  bodyBgImage?: string;
+  bodyBgSize?: string;
+  bodyBgPosition?: string;
+  bodyBgRepeat?: string;
   contentBgColor: string; // default #ffffff
   contentBgImage?: string;
   defaultFontFamily: string; // default Arial, sans-serif

@@ -399,6 +399,102 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
             </div>
           </div>
 
+          {/* Imagem de Fundo da Seção / Linha */}
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-slate-800">Imagem de Fundo da Seção</label>
+              {selectedRow.style.backgroundImage && (
+                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">Ativo</span>
+              )}
+            </div>
+
+            {selectedRow.style.backgroundImage ? (
+              <div className="space-y-2">
+                <div className="h-16 rounded-lg border border-slate-200 overflow-hidden bg-slate-900 flex items-center justify-center relative group">
+                  <img src={selectedRow.style.backgroundImage} alt="Fundo" className="w-full h-full object-cover opacity-80" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold">
+                    Fundo aplicado
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => onUpdateRow({
+                    ...selectedRow,
+                    style: {
+                      ...selectedRow.style,
+                      backgroundImage: undefined
+                    }
+                  })}
+                  className="w-full py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remover Imagem de Fundo</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Subir Imagem de Fundo (Upload)</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = e.target.files;
+                      if (!files || files.length === 0) return;
+                      try {
+                        const optimized = await compressImageFile(files[0], 1200, 0.85);
+                        onUpdateRow({
+                          ...selectedRow,
+                          style: {
+                            ...selectedRow.style,
+                            backgroundImage: optimized.dataUrl,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                          }
+                        });
+                      } catch (err) {
+                        console.error('Falha ao subir imagem de fundo', err);
+                      } finally {
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+
+                <button
+                  onClick={onOpenFileManager}
+                  className="w-full py-1.5 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Escolher da Galeria</span>
+                </button>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-[10px] text-slate-500 mb-1">Ou cole uma URL direta</label>
+              <input
+                type="text"
+                placeholder="https://..."
+                value={selectedRow.style.backgroundImage || ''}
+                onChange={e => onUpdateRow({
+                  ...selectedRow,
+                  style: {
+                    ...selectedRow.style,
+                    backgroundImage: e.target.value || undefined,
+                    backgroundSize: selectedRow.style.backgroundSize || 'cover',
+                    backgroundPosition: selectedRow.style.backgroundPosition || 'center',
+                    backgroundRepeat: selectedRow.style.backgroundRepeat || 'no-repeat'
+                  }
+                })}
+                className="w-full text-xs p-1.5 border border-slate-200 rounded-md focus:outline-none bg-white font-mono"
+              />
+            </div>
+          </div>
+
           {/* Padding */}
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -499,6 +595,33 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
             className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg shadow-xs transition-colors shrink-0"
           >
             Configurar Janelas
+          </button>
+        </div>
+      )}
+
+      {/* Shortcut banner to remove row background image if present */}
+      {selectedRow && selectedRow.style.backgroundImage && (
+        <div className="mb-3 p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between gap-2 shadow-2xs">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-amber-950 block truncate">
+              Fundo ativo nesta seção
+            </span>
+            <span className="text-[10px] text-amber-700 block truncate">
+              Imagem de fundo aplicada na linha
+            </span>
+          </div>
+          <button
+            onClick={() => onUpdateRow({
+              ...selectedRow,
+              style: {
+                ...selectedRow.style,
+                backgroundImage: undefined
+              }
+            })}
+            className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-colors shrink-0"
+            title="Remover imagem de fundo desta seção com 1 clique"
+          >
+            Remover Fundo
           </button>
         </div>
       )}

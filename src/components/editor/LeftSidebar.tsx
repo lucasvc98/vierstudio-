@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { 
   Type, Heading, Image as ImageIcon, Sparkles, Square, Minus, MoveVertical, 
   Share2, Video, Code2, ShoppingBag, Tag, Menu, Layout, FileText, UserCheck, 
-  Columns, Bookmark, Palette, Plus, Trash2, ArrowRight, LayoutGrid, Calendar, Target
+  Columns, Bookmark, Palette, Plus, Trash2, ArrowRight, LayoutGrid, Calendar, Target,
+  Upload, FolderOpen
 } from 'lucide-react';
 import { EmailBlockType, EmailRow, GlobalEmailSettings, SavedBlockItem } from '../../types/email';
+import { compressImageFile } from '../../utils/imageOptimizer';
 
 interface LeftSidebarProps {
   onAddBlock: (type: EmailBlockType) => void;
@@ -377,6 +379,95 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     className="w-full text-[11px] font-mono focus:outline-none uppercase"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Background da Janela Inteira / E-mail Completo */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800">
+                  Background da Janela Inteira
+                </label>
+                {globalSettings.bodyBgImage && (
+                  <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">Ativo</span>
+                )}
+              </div>
+
+              <span className="text-[10px] text-slate-500 block">
+                Aplica uma imagem que preenche todo o fundo da janela de edição e do corpo do e-mail.
+              </span>
+
+              {globalSettings.bodyBgImage ? (
+                <div className="space-y-2">
+                  <div className="h-20 rounded-lg border border-slate-200 overflow-hidden bg-slate-900 flex items-center justify-center relative">
+                    <img src={globalSettings.bodyBgImage} alt="Background da Janela" className="w-full h-full object-cover" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      onClick={() => onUpdateGlobalSettings({
+                        bodyBgSize: globalSettings.bodyBgSize === 'cover' ? 'contain' : 'cover'
+                      })}
+                      className="py-1 px-2 text-[11px] bg-white border border-slate-200 rounded font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Ajuste: {globalSettings.bodyBgSize || 'cover'}
+                    </button>
+                    <button
+                      onClick={() => onUpdateGlobalSettings({
+                        bodyBgImage: undefined
+                      })}
+                      className="py-1 px-2 text-[11px] bg-rose-50 text-rose-700 border border-rose-200 rounded font-semibold hover:bg-rose-100 flex items-center justify-center gap-1"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Remover</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors">
+                    <Upload className="w-4 h-4" />
+                    <span>Subir Background da Janela (Upload)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const files = e.target.files;
+                        if (!files || files.length === 0) return;
+                        try {
+                          const optimized = await compressImageFile(files[0], 1920, 0.85);
+                          onUpdateGlobalSettings({
+                            bodyBgImage: optimized.dataUrl,
+                            bodyBgSize: 'cover',
+                            bodyBgPosition: 'center top',
+                            bodyBgRepeat: 'no-repeat'
+                          });
+                        } catch (err) {
+                          console.error('Falha ao subir background da janela', err);
+                        } finally {
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] text-slate-500 mb-1">Ou cole uma URL de imagem</label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={globalSettings.bodyBgImage || ''}
+                  onChange={e => onUpdateGlobalSettings({
+                    bodyBgImage: e.target.value || undefined,
+                    bodyBgSize: globalSettings.bodyBgSize || 'cover',
+                    bodyBgPosition: globalSettings.bodyBgPosition || 'center top',
+                    bodyBgRepeat: globalSettings.bodyBgRepeat || 'no-repeat'
+                  })}
+                  className="w-full text-xs p-1.5 border border-slate-200 rounded-md focus:outline-none bg-white font-mono"
+                />
               </div>
             </div>
 
