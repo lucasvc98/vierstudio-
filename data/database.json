@@ -23,7 +23,7 @@
         "sectionSpacing": 0
       },
       "createdAt": "2026-11-15T15:55:00Z",
-      "updatedAt": "2026-11-15T20:36:57.151Z",
+      "updatedAt": "2026-11-15T20:54:35.001Z",
       "rows": [
         {
           "id": "row-monetter-header",
@@ -48,9 +48,16 @@
               "blocks": [
                 {
                   "id": "blk-monetter-header-text",
-                  "type": "html",
+                  "type": "header",
                   "content": {
-                    "html": "\n                      <table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n                        <tr>\n                          <td align=\"left\" style=\"vertical-align: middle;\">\n                            <span style=\"color:#ffffff; font-size:18px; font-weight:800; letter-spacing:0.5px; font-family:'Plus Jakarta Sans', Arial, sans-serif;\">MONETTER</span>\n                            <span style=\"color:#ff6b00; font-size:11px; margin-left:8px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;\">• NEGOCIE MAIS ATIVOS</span>\n                          </td>\n                          <td align=\"right\" style=\"vertical-align: middle;\">\n                            <span style=\"display:inline-block; background-color:#ff6b00; color:#ffffff; font-size:10px; font-weight:800; padding:4px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; font-family:'Plus Jakarta Sans', Arial, sans-serif;\">🔴 SUPER LIVE VIP</span>\n                          </td>\n                        </tr>\n                      </table>\n                    "
+                    "brandText": "MONETTER",
+                    "sloganText": "• NEGOCIE MAIS ATIVOS",
+                    "badgeText": "🔴 SUPER LIVE VIP",
+                    "badgeUrl": "#",
+                    "brandColor": "#ffffff",
+                    "sloganColor": "#ff6b00",
+                    "badgeBg": "#ff6b00",
+                    "badgeTextColor": "#ffffff"
                   },
                   "style": {
                     "marginTop": 0,
@@ -239,37 +246,61 @@
                 },
                 {
                   "id": "blk-card-1",
-                  "type": "html",
+                  "type": "topic-card",
                   "content": {
-                    "html": "\n                      <div style=\"background-color: #101522; border: 1px solid #1e293d; border-radius: 12px; padding: 14px 18px; margin-bottom: 12px;\">\n                        <table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n                          <tr>\n                            <td width=\"46\" align=\"center\" style=\"vertical-align: middle;\">\n                              <span style=\"display:inline-block; width:38px; height:38px; line-height:38px; text-align:center; background:rgba(255,107,0,0.12); border:1px solid #ff6b00; border-radius:50%; font-size:18px;\">🎯</span>\n                            </td>\n                            <td width=\"16\" align=\"center\" style=\"vertical-align: middle;\">\n                              <div style=\"width: 2px; height: 38px; background-color: #ff6b00; opacity: 0.8; margin: 0 auto;\"></div>\n                            </td>\n                            <td style=\"vertical-align: middle; padding-left: 8px;\">\n                              <h4 style=\"color: #ffffff; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">Erros que travam seus resultados</h4>\n                              <p style=\"color: #94a3b8; font-size: 13px; line-height: 18px; margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">Entenda o que faz tantos traders perderem dinheiro sem perceber.</p>\n                            </td>\n                          </tr>\n                        </table>\n                      </div>\n                    "
+                    "icon": "🎯",
+                    "iconImage": "",
+                    "title": "Erros que travam seus resultados",
+                    "description": "Entenda o que faz tantos traders perderem dinheiro sem perceber.",
+                    "dividerColor": "#ff6b00",
+                    "bgColor": "#101522",
+                    "borderColor": "#1e293d",
+                    "titleColor": "#ffffff",
+                    "descColor": "#94a3b8"
                   },
                   "style": {
                     "marginTop": 0,
-                    "marginBottom": 0
+                    "marginBottom": 12
                   },
                   "deviceVisibility": "all"
                 },
                 {
                   "id": "blk-card-2",
-                  "type": "html",
+                  "type": "topic-card",
                   "content": {
-                    "html": "\n                      <div style=\"background-color: #101522; border: 1px solid #1e293d; border-radius: 12px; padding: 14px 18px; margin-bottom: 12px;\">\n                        <table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n                          <tr>\n                            <td width=\"46\" align=\"center\" style=\"vertical-align: middle;\">\n                              <span style=\"display:inline-block; width:38px; height:38px; line-height:38px; text-align:center; background:rgba(255,107,0,0.12); border:1px solid #ff6b00; border-radius:50%; font-size:18px;\">📊</span>\n                            </td>\n                            <td width=\"16\" align=\"center\" style=\"vertical-align: middle;\">\n                              <div style=\"width: 2px; height: 38px; background-color: #ff6b00; opacity: 0.8; margin: 0 auto;\"></div>\n                            </td>\n                            <td style=\"vertical-align: middle; padding-left: 8px;\">\n                              <h4 style=\"color: #ffffff; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">Estratégias práticas de análise</h4>\n                              <p style=\"color: #94a3b8; font-size: 13px; line-height: 18px; margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">Aprenda leituras e decisões mais conscientes para o mercado.</p>\n                            </td>\n                          </tr>\n                        </table>\n                      </div>\n                    "
+                    "icon": "📊",
+                    "iconImage": "",
+                    "title": "Estratégias práticas de análise",
+                    "description": "Aprenda leituras e decisões mais conscientes para o mercado.",
+                    "dividerColor": "#ff6b00",
+                    "bgColor": "#101522",
+                    "borderColor": "#1e293d",
+                    "titleColor": "#ffffff",
+                    "descColor": "#94a3b8"
                   },
                   "style": {
                     "marginTop": 0,
-                    "marginBottom": 0
+                    "marginBottom": 12
                   },
                   "deviceVisibility": "all"
                 },
                 {
                   "id": "blk-card-3",
-                  "type": "html",
+                  "type": "topic-card",
                   "content": {
-                    "html": "\n                      <div style=\"background-color: #101522; border: 1px solid #1e293d; border-radius: 12px; padding: 14px 18px; margin-bottom: 8px;\">\n                        <table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n                          <tr>\n                            <td width=\"46\" align=\"center\" style=\"vertical-align: middle;\">\n                              <span style=\"display:inline-block; width:38px; height:38px; line-height:38px; text-align:center; background:rgba(255,107,0,0.12); border:1px solid #ff6b00; border-radius:50%; font-size:18px;\">🛡️</span>\n                            </td>\n                            <td width=\"16\" align=\"center\" style=\"vertical-align: middle;\">\n                              <div style=\"width: 2px; height: 38px; background-color: #ff6b00; opacity: 0.8; margin: 0 auto;\"></div>\n                            </td>\n                            <td style=\"vertical-align: middle; padding-left: 8px;\">\n                              <h4 style=\"color: #ffffff; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">Gestão de risco profissional</h4>\n                              <p style=\"color: #94a3b8; font-size: 13px; line-height: 18px; margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">Saiba como proteger melhor sua banca e evitar decisões por impulso.</p>\n                            </td>\n                          </tr>\n                        </table>\n                      </div>\n                    "
+                    "icon": "🛡️",
+                    "iconImage": "",
+                    "title": "Gestão de risco profissional",
+                    "description": "Saiba como proteger melhor sua banca e evitar decisões por impulso.",
+                    "dividerColor": "#ff6b00",
+                    "bgColor": "#101522",
+                    "borderColor": "#1e293d",
+                    "titleColor": "#ffffff",
+                    "descColor": "#94a3b8"
                   },
                   "style": {
                     "marginTop": 0,
-                    "marginBottom": 0
+                    "marginBottom": 12
                   },
                   "deviceVisibility": "all"
                 }
@@ -304,13 +335,21 @@
               "blocks": [
                 {
                   "id": "blk-schedule-glowing-box",
-                  "type": "html",
+                  "type": "schedule-box",
                   "content": {
-                    "html": "\n                      <div style=\"background: rgba(11, 15, 25, 0.92); border: 1.5px solid #ff6b00; border-radius: 16px; padding: 22px 24px; box-shadow: 0 0 30px rgba(255, 107, 0, 0.25); margin-bottom: 24px;\">\n                        <table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n                          <tr>\n                            <td width=\"64\" align=\"center\" style=\"vertical-align: middle;\">\n                              <div style=\"width: 52px; height: 52px; border: 1.5px solid #ff6b00; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 107, 0, 0.1);\">\n                                <span style=\"font-size: 26px; line-height: 52px; display: block; text-align: center;\">📅</span>\n                              </div>\n                            </td>\n                            <td style=\"vertical-align: middle; padding-left: 16px;\">\n                              <h3 style=\"color: #ffffff; font-size: 19px; font-weight: 800; margin: 0 0 6px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">Super Live com PH</h3>\n                              <p style=\"color: #ff8a00; font-size: 14px; font-weight: 700; margin: 0 0 3px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">\n                                🗓️ Dias 19 e 20/11\n                              </p>\n                              <p style=\"color: #cbd5e1; font-size: 14px; font-weight: 600; margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">\n                                🕒 12h às 14h &nbsp;•&nbsp; 20h às 22h\n                              </p>\n                            </td>\n                          </tr>\n                        </table>\n                      </div>\n                    "
+                    "icon": "📅",
+                    "iconImage": "",
+                    "badge": "DATAS & HORÁRIOS CONFIRMADOS",
+                    "title": "Super Live com PH",
+                    "dates": "Dias 19 e 20 de Novembro",
+                    "times": "1º Turno: 12h às 14h • 2º Turno: 20h às 22h",
+                    "accentColor": "#ff6b00",
+                    "bgColor": "rgba(11, 15, 25, 0.92)",
+                    "borderColor": "#ff6b00"
                   },
                   "style": {
                     "marginTop": 0,
-                    "marginBottom": 0
+                    "marginBottom": 24
                   },
                   "deviceVisibility": "all"
                 },

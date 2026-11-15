@@ -932,6 +932,9 @@ export const App: React.FC = () => {
               url,
               imageUrl: url,
               thumbnailUrl: url,
+              iconImage: url,
+              logoUrl: url,
+              avatar: url,
               alt: alt || b.content.alt || ''
             }
           };

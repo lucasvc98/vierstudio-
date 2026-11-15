@@ -29,7 +29,9 @@ export type EmailBlockType =
   | 'hero'
   | 'contact'
   | 'address'
-  | 'signature';
+  | 'signature'
+  | 'topic-card'
+  | 'schedule-box';
 
 export interface BlockStyle {
   fontFamily?: string;

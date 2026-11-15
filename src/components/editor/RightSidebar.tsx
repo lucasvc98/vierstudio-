@@ -933,6 +933,356 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           </>
         )}
 
+        {/* ================= HEADER / TOPO CONFIG ================= */}
+        {block.type === 'header' && (
+          <>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Nome / Marca</label>
+              <input
+                type="text"
+                value={block.content.brandText || ''}
+                onChange={e => updateContent({ brandText: e.target.value })}
+                placeholder="Ex: MONETTER"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Slogan / Subtítulo</label>
+              <input
+                type="text"
+                value={block.content.sloganText || ''}
+                onChange={e => updateContent({ sloganText: e.target.value })}
+                placeholder="Ex: • NEGOCIE MAIS ATIVOS"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Texto do Selo / Botão</label>
+              <input
+                type="text"
+                value={block.content.badgeText || ''}
+                onChange={e => updateContent({ badgeText: e.target.value })}
+                placeholder="Ex: 🔴 SUPER LIVE VIP"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Link do Selo (URL)</label>
+              <input
+                type="text"
+                value={block.content.badgeUrl || ''}
+                onChange={e => updateContent({ badgeUrl: e.target.value })}
+                placeholder="https://..."
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Logotipo em Imagem (Opcional)</label>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={block.content.logoUrl || ''}
+                  onChange={e => updateContent({ logoUrl: e.target.value })}
+                  placeholder="https://... (ou use texto)"
+                  className="flex-1 text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+                />
+                <button
+                  onClick={onOpenFileManager}
+                  className="px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Trocar</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor da Marca</label>
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+                  <input
+                    type="color"
+                    value={block.content.brandColor || '#ffffff'}
+                    onChange={e => updateContent({ brandColor: e.target.value })}
+                    className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={block.content.brandColor || '#ffffff'}
+                    onChange={e => updateContent({ brandColor: e.target.value })}
+                    className="w-full text-[11px] font-mono focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor do Selo</label>
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+                  <input
+                    type="color"
+                    value={block.content.badgeBg || '#ff6b00'}
+                    onChange={e => updateContent({ badgeBg: e.target.value })}
+                    className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={block.content.badgeBg || '#ff6b00'}
+                    onChange={e => updateContent({ badgeBg: e.target.value })}
+                    className="w-full text-[11px] font-mono focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ================= TOPIC CARD CONFIG ================= */}
+        {block.type === 'topic-card' && (
+          <>
+            <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl space-y-2.5">
+              <label className="block text-[11px] font-bold text-indigo-900">Imagem ou Ícone do Tópico</label>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full border-2 border-orange-500 bg-slate-900 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                  {block.content.iconImage ? (
+                    <img src={block.content.iconImage} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xl">{block.content.icon || '🎯'}</span>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1.5">
+                  <button
+                    onClick={onOpenFileManager}
+                    className="w-full py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>Trocar Imagem do Tópico</span>
+                  </button>
+                  {block.content.iconImage && (
+                    <button
+                      onClick={() => updateContent({ iconImage: '' })}
+                      className="text-[10px] text-red-600 hover:underline block text-center w-full"
+                    >
+                      Remover imagem (usar emoji)
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">URL Direta da Imagem</label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={block.content.iconImage || ''}
+                  onChange={e => updateContent({ iconImage: e.target.value })}
+                  className="w-full text-xs p-1.5 border border-slate-200 rounded-md focus:outline-none bg-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">Ou selecione um Ícone Rápido</label>
+                <div className="flex flex-wrap gap-1">
+                  {['🎯', '📊', '🛡️', '🚀', '💰', '📈', '💎', '⚡', '🔔', '🎁', '🔥', '🏆', '💡', '🔑', '⭐', '✨'].map(emoji => (
+                    <button
+                      key={emoji}
+                      onClick={() => updateContent({ icon: emoji, iconImage: '' })}
+                      className={`w-7 h-7 text-sm rounded border flex items-center justify-center hover:scale-110 transition-transform ${
+                        !block.content.iconImage && block.content.icon === emoji
+                          ? 'bg-orange-100 border-orange-500 shadow-2xs'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Título do Tópico</label>
+              <input
+                type="text"
+                value={block.content.title || ''}
+                onChange={e => updateContent({ title: e.target.value })}
+                placeholder="Ex: Erros que travam seus resultados"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 font-semibold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Descrição do Tópico</label>
+              <textarea
+                rows={3}
+                value={block.content.description || ''}
+                onChange={e => updateContent({ description: e.target.value })}
+                placeholder="Ex: Entenda o que faz tantos traders perderem dinheiro sem perceber."
+                className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor do Destaque/Ícone</label>
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+                  <input
+                    type="color"
+                    value={block.content.dividerColor || '#ff6b00'}
+                    onChange={e => updateContent({ dividerColor: e.target.value })}
+                    className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={block.content.dividerColor || '#ff6b00'}
+                    onChange={e => updateContent({ dividerColor: e.target.value })}
+                    className="w-full text-[11px] font-mono focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Fundo do Card</label>
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+                  <input
+                    type="color"
+                    value={block.content.bgColor || '#101522'}
+                    onChange={e => updateContent({ bgColor: e.target.value })}
+                    className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={block.content.bgColor || '#101522'}
+                    onChange={e => updateContent({ bgColor: e.target.value })}
+                    className="w-full text-[11px] font-mono focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ================= SCHEDULE BOX CONFIG ================= */}
+        {block.type === 'schedule-box' && (
+          <>
+            <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2.5">
+              <label className="block text-[11px] font-bold text-amber-900">Ícone ou Imagem do Evento</label>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl border-2 border-orange-500 bg-slate-900 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                  {block.content.iconImage ? (
+                    <img src={block.content.iconImage} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl">{block.content.icon || '📅'}</span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <button
+                    onClick={onOpenFileManager}
+                    className="w-full py-1.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>Trocar Ícone/Imagem</span>
+                  </button>
+                  {block.content.iconImage && (
+                    <button
+                      onClick={() => updateContent({ iconImage: '' })}
+                      className="text-[10px] text-red-600 hover:underline block text-center w-full"
+                    >
+                      Usar emoji padrão
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tag Superior (Opcional)</label>
+              <input
+                type="text"
+                value={block.content.badge || ''}
+                onChange={e => updateContent({ badge: e.target.value })}
+                placeholder="Ex: 🗓️ DATAS & HORÁRIOS CONFIRMADOS"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Título do Evento</label>
+              <input
+                type="text"
+                value={block.content.title || ''}
+                onChange={e => updateContent({ title: e.target.value })}
+                placeholder="Ex: Super Live com PH"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Datas Confirmadas</label>
+              <input
+                type="text"
+                value={block.content.dates || ''}
+                onChange={e => updateContent({ dates: e.target.value })}
+                placeholder="Ex: Dias 19 e 20 de Novembro"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none font-semibold text-orange-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Horários / Turnos</label>
+              <input
+                type="text"
+                value={block.content.times || ''}
+                onChange={e => updateContent({ times: e.target.value })}
+                placeholder="Ex: 1º Turno: 12h às 14h • 2º Turno: 20h às 22h"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor Neon da Borda & Destaques</label>
+              <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+                <input
+                  type="color"
+                  value={block.content.accentColor || '#ff6b00'}
+                  onChange={e => updateContent({ accentColor: e.target.value, borderColor: e.target.value })}
+                  className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+                />
+                <input
+                  type="text"
+                  value={block.content.accentColor || '#ff6b00'}
+                  onChange={e => updateContent({ accentColor: e.target.value, borderColor: e.target.value })}
+                  className="w-full text-[11px] font-mono focus:outline-none uppercase"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ================= HTML BLOCK CONFIG ================= */}
+        {block.type === 'html' && (
+          <>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-semibold text-slate-700">Código HTML do Bloco</label>
+                <span className="text-[10px] text-slate-400 font-mono">Editável</span>
+              </div>
+              <textarea
+                rows={10}
+                value={block.content.html || block.content.code || ''}
+                onChange={e => updateContent({ html: e.target.value, code: e.target.value })}
+                className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 font-mono bg-slate-900 text-slate-100 leading-relaxed"
+                placeholder="<div>Insira ou edite o HTML aqui...</div>"
+              />
+            </div>
+          </>
+        )}
+
         {/* ================= ALIGNMENT & COLOR PROPERTIES (COMMON) ================= */}
         <div>
           <label className="block text-[11px] font-semibold text-slate-700 mb-1">Alinhamento</label>

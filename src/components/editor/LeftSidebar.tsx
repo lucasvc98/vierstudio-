@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Type, Heading, Image as ImageIcon, Sparkles, Square, Minus, MoveVertical, 
   Share2, Video, Code2, ShoppingBag, Tag, Menu, Layout, FileText, UserCheck, 
-  Columns, Bookmark, Palette, Plus, Trash2, ArrowRight, LayoutGrid
+  Columns, Bookmark, Palette, Plus, Trash2, ArrowRight, LayoutGrid, Calendar, Target
 } from 'lucide-react';
 import { EmailBlockType, EmailRow, GlobalEmailSettings, SavedBlockItem } from '../../types/email';
 
@@ -57,6 +57,9 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     { type: 'coupon', label: 'Cupom de Desconto', icon: Tag, category: 'Conversão' },
     { type: 'product', label: 'Card de Produto', icon: ShoppingBag, category: 'Conversão' },
     { type: 'hero', label: 'Banner Promocional', icon: Layout, category: 'Blocos' },
+    { type: 'header', label: 'Barra de Topo', icon: Sparkles, category: 'Blocos' },
+    { type: 'topic-card', label: 'Card de Tópico', icon: Target, category: 'Blocos' },
+    { type: 'schedule-box', label: 'Box de Evento', icon: Calendar, category: 'Blocos' },
     { type: 'nav', label: 'Menu de Navegação', icon: Menu, category: 'Navegação' },
     { type: 'signature', label: 'Assinatura Corp.', icon: UserCheck, category: 'Contato' },
     { type: 'footer', label: 'Rodapé Legal', icon: FileText, category: 'Legal' },

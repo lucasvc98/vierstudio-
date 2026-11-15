@@ -207,6 +207,60 @@ export function createNewBlock(type: EmailBlockType): EmailBlock {
         deviceVisibility: 'all'
       };
 
+    case 'header':
+      return {
+        id,
+        type: 'header',
+        content: {
+          brandText: 'MONETTER',
+          sloganText: '• NEGOCIE MAIS ATIVOS',
+          badgeText: '🔴 SUPER LIVE VIP',
+          badgeUrl: '#',
+          brandColor: '#ffffff',
+          sloganColor: '#ff6b00',
+          badgeBg: '#ff6b00',
+          badgeTextColor: '#ffffff'
+        },
+        style: { marginTop: 0, marginBottom: 0 },
+        deviceVisibility: 'all'
+      };
+
+    case 'topic-card':
+      return {
+        id,
+        type: 'topic-card',
+        content: {
+          icon: '🎯',
+          iconImage: '',
+          title: 'Novo Tópico ou Benefício',
+          description: 'Descreva aqui o detalhe ou benefício que será entregue.',
+          dividerColor: '#ff6b00',
+          bgColor: '#101522',
+          borderColor: '#1e293d'
+        },
+        style: { marginBottom: 12 },
+        deviceVisibility: 'all'
+      };
+
+    case 'schedule-box':
+      return {
+        id,
+        type: 'schedule-box',
+        content: {
+          icon: '📅',
+          iconImage: '',
+          badge: 'DATAS & HORÁRIOS CONFIRMADOS',
+          title: 'Super Live com PH',
+          dates: 'Dias 19 e 20 de Novembro',
+          times: '1º Turno: 12h às 14h • 2º Turno: 20h às 22h',
+          accentColor: '#ff6b00',
+          bgColor: 'rgba(11, 15, 25, 0.92)',
+          borderColor: '#ff6b00'
+        },
+        style: { marginBottom: 20 },
+        deviceVisibility: 'all'
+      };
+
     case 'html':
       return {
         id,

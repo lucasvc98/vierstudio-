@@ -506,6 +506,113 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
       `;
     }
 
+    case 'header': {
+      const brandText = content.brandText || 'MONETTER';
+      const sloganText = content.sloganText || '• NEGOCIE MAIS ATIVOS';
+      const badgeText = content.badgeText || '🔴 SUPER LIVE VIP';
+      const badgeUrl = content.badgeUrl || '#';
+      const brandColor = content.brandColor || '#ffffff';
+      const sloganColor = content.sloganColor || '#ff6b00';
+      const badgeBg = content.badgeBg || '#ff6b00';
+      const badgeTextColor = content.badgeTextColor || '#ffffff';
+      const logoUrl = content.logoUrl;
+
+      return `
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top: ${style.marginTop ?? 0}px; margin-bottom: ${style.marginBottom ?? 0}px;">
+          <tr>
+            <td align="left" style="vertical-align: middle;">
+              ${logoUrl 
+                ? `<img src="${logoUrl}" alt="${escapeHtml(brandText)}" style="display:inline-block; vertical-align:middle; max-height:28px; margin-right:8px; border:0;" />` 
+                : `<span style="color:${brandColor}; font-size:18px; font-weight:800; letter-spacing:0.5px; font-family:${defaultFont}; vertical-align:middle;">${escapeHtml(brandText)}</span>`
+              }
+              ${sloganText ? `<span style="color:${sloganColor}; font-size:11px; margin-left:8px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; font-family:${defaultFont}; vertical-align:middle;">${escapeHtml(sloganText)}</span>` : ''}
+            </td>
+            ${badgeText ? `
+            <td align="right" style="vertical-align: middle;">
+              <a href="${badgeUrl}" target="_blank" style="display:inline-block; background-color:${badgeBg}; color:${badgeTextColor}; font-size:10px; font-weight:800; padding:5px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; font-family:${defaultFont}; text-decoration:none;">
+                ${escapeHtml(badgeText)}
+              </a>
+            </td>` : ''}
+          </tr>
+        </table>
+      `;
+    }
+
+    case 'topic-card': {
+      const icon = content.icon || '🎯';
+      const iconImage = content.iconImage || '';
+      const title = content.title || 'Título do Tópico';
+      const description = content.description || 'Descrição detalhada do tópico.';
+      const dividerColor = content.dividerColor || '#ff6b00';
+      const bgColor = content.bgColor || '#101522';
+      const borderColor = content.borderColor || '#1e293d';
+      const titleColor = content.titleColor || '#ffffff';
+      const descColor = content.descColor || '#94a3b8';
+
+      return `
+        <div style="background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 14px 18px; margin-top: ${style.marginTop ?? 0}px; margin-bottom: ${style.marginBottom ?? 12}px;">
+          <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="46" align="center" style="vertical-align: middle;">
+                <div style="width:38px; height:38px; line-height:38px; text-align:center; background:rgba(255,107,0,0.12); border:1px solid ${dividerColor}; border-radius:50%; overflow:hidden;">
+                  ${iconImage 
+                    ? `<img src="${iconImage}" alt="" width="38" height="38" style="display:block; width:38px; height:38px; object-fit:cover; border-radius:50%; border:0;" />`
+                    : `<span style="font-size:18px; vertical-align:middle;">${icon}</span>`
+                  }
+                </div>
+              </td>
+              <td width="16" align="center" style="vertical-align: middle;">
+                <div style="width: 2px; height: 38px; background-color: ${dividerColor}; opacity: 0.8; margin: 0 auto;"></div>
+              </td>
+              <td style="vertical-align: middle; padding-left: 8px;">
+                <h4 style="color: ${titleColor}; font-size: 15px; font-weight: 700; margin: 0 0 3px 0; font-family: ${defaultFont};">${escapeHtml(title)}</h4>
+                <p style="color: ${descColor}; font-size: 13px; line-height: 18px; margin: 0; font-family: ${defaultFont};">${escapeHtml(description)}</p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `;
+    }
+
+    case 'schedule-box': {
+      const icon = content.icon || '📅';
+      const iconImage = content.iconImage || '';
+      const badge = content.badge || 'DATAS & HORÁRIOS CONFIRMADOS';
+      const title = content.title || 'Super Live com PH';
+      const dates = content.dates || 'Dias 19 e 20 de Novembro';
+      const times = content.times || '1º Turno: 12h às 14h • 2º Turno: 20h às 22h';
+      const accentColor = content.accentColor || '#ff6b00';
+      const bgColor = content.bgColor || 'rgba(11, 15, 25, 0.92)';
+      const borderColor = content.borderColor || '#ff6b00';
+
+      return `
+        <div style="background: ${bgColor}; border: 1.5px solid ${borderColor}; border-radius: 16px; padding: 22px 24px; box-shadow: 0 0 30px rgba(255, 107, 0, 0.25); margin-top: ${style.marginTop ?? 0}px; margin-bottom: ${style.marginBottom ?? 20}px;">
+          <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="64" align="center" style="vertical-align: middle;">
+                <div style="width: 52px; height: 52px; border: 1.5px solid ${accentColor}; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 107, 0, 0.1);">
+                  ${iconImage
+                    ? `<img src="${iconImage}" alt="" width="52" height="52" style="display:block; width:52px; height:52px; object-fit:cover; border-radius:10px; border:0;" />`
+                    : `<span style="font-size: 26px; line-height: 52px; display: block; text-align: center;">${icon}</span>`
+                  }
+                </div>
+              </td>
+              <td style="vertical-align: middle; padding-left: 16px;">
+                ${badge ? `<div style="color: ${accentColor}; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-family: ${defaultFont};">${escapeHtml(badge)}</div>` : ''}
+                <h3 style="color: #ffffff; font-size: 19px; font-weight: 800; margin: 0 0 6px 0; font-family: ${defaultFont};">${escapeHtml(title)}</h3>
+                <p style="color: ${accentColor}; font-size: 14px; font-weight: 700; margin: 0 0 3px 0; font-family: ${defaultFont};">
+                  ${escapeHtml(dates)}
+                </p>
+                <p style="color: #cbd5e1; font-size: 14px; font-weight: 600; margin: 0; font-family: ${defaultFont};">
+                  ${escapeHtml(times)}
+                </p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `;
+    }
+
     case 'html': {
       return content.html || content.code || '<!-- Bloco HTML Personalizado -->';
     }

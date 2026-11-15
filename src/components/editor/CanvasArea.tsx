@@ -549,6 +549,234 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
               </div>
             )}
 
+            {block.type === 'header' && (
+              <div className="flex items-center justify-between py-2 px-1">
+                <div className="flex items-center gap-2">
+                  {block.content.logoUrl ? (
+                    <img src={block.content.logoUrl} alt="Logo" className="max-h-7 object-contain" />
+                  ) : (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, brandText: e.currentTarget.innerText } })}
+                      style={{ color: block.content.brandColor || '#ffffff', fontSize: '18px', fontWeight: 800, letterSpacing: '0.5px' }}
+                      className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
+                    >
+                      {block.content.brandText || 'MONETTER'}
+                    </span>
+                  )}
+                  <span
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, sloganText: e.currentTarget.innerText } })}
+                    style={{ color: block.content.sloganColor || '#ff6b00', fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}
+                    className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
+                  >
+                    {block.content.sloganText || '• NEGOCIE MAIS ATIVOS'}
+                  </span>
+                </div>
+                {block.content.badgeText && (
+                  <span
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, badgeText: e.currentTarget.innerText } })}
+                    style={{
+                      backgroundColor: block.content.badgeBg || '#ff6b00',
+                      color: block.content.badgeTextColor || '#ffffff',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}
+                    className="outline-none focus:ring-1 focus:ring-white/40 cursor-text select-text"
+                  >
+                    {block.content.badgeText}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {block.type === 'topic-card' && (
+              <div 
+                style={{
+                  backgroundColor: block.content.bgColor || '#101522',
+                  borderColor: block.content.borderColor || '#1e293d',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderRadius: '12px',
+                  padding: '14px 18px',
+                  marginBottom: `${block.style.marginBottom ?? 12}px`
+                }}
+                className="flex items-center gap-3 transition-colors group/card"
+              >
+                {/* Topic icon / image circle */}
+                <div 
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 relative overflow-hidden border cursor-pointer group/icon"
+                  style={{
+                    backgroundColor: 'rgba(255,107,0,0.12)',
+                    borderColor: block.content.dividerColor || '#ff6b00'
+                  }}
+                  title="Clique para selecionar este bloco e trocar a imagem no painel lateral"
+                >
+                  {block.content.iconImage ? (
+                    <img src={block.content.iconImage} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg select-none">{block.content.icon || '🎯'}</span>
+                  )}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/icon:opacity-100 flex items-center justify-center transition-opacity text-[9px] text-white font-bold">
+                    Trocar
+                  </div>
+                </div>
+
+                {/* Vertical Divider */}
+                <div 
+                  style={{
+                    width: '2px',
+                    height: '38px',
+                    backgroundColor: block.content.dividerColor || '#ff6b00',
+                    opacity: 0.8
+                  }}
+                  className="shrink-0"
+                />
+
+                {/* Texts (Title & Description) with inline contentEditable */}
+                <div className="flex-1 min-w-0">
+                  <h4
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, title: e.currentTarget.innerText } })}
+                    style={{
+                      color: block.content.titleColor || '#ffffff',
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      margin: '0 0 3px 0'
+                    }}
+                    className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
+                  >
+                    {block.content.title || 'Título do Tópico'}
+                  </h4>
+                  <p
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, description: e.currentTarget.innerText } })}
+                    style={{
+                      color: block.content.descColor || '#94a3b8',
+                      fontSize: '13px',
+                      lineHeight: '18px',
+                      margin: 0
+                    }}
+                    className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
+                  >
+                    {block.content.description || 'Descrição do tópico.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {block.type === 'schedule-box' && (
+              <div 
+                style={{
+                  background: block.content.bgColor || 'rgba(11, 15, 25, 0.92)',
+                  borderColor: block.content.borderColor || '#ff6b00',
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid',
+                  borderRadius: '16px',
+                  padding: '20px 22px',
+                  boxShadow: '0 0 30px rgba(255, 107, 0, 0.25)',
+                  marginBottom: `${block.style.marginBottom ?? 20}px`
+                }}
+                className="flex items-center gap-4 transition-all"
+              >
+                {/* Event icon / image box */}
+                <div 
+                  className="w-13 h-13 rounded-xl flex items-center justify-center shrink-0 border cursor-pointer relative overflow-hidden group/cal"
+                  style={{
+                    borderColor: block.content.accentColor || '#ff6b00',
+                    backgroundColor: 'rgba(255, 107, 0, 0.1)'
+                  }}
+                  title="Clique para selecionar e alterar o ícone"
+                >
+                  {block.content.iconImage ? (
+                    <img src={block.content.iconImage} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl select-none">{block.content.icon || '📅'}</span>
+                  )}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/cal:opacity-100 flex items-center justify-center transition-opacity text-[9px] text-white font-bold">
+                    Trocar
+                  </div>
+                </div>
+
+                {/* Texts with inline editing */}
+                <div className="flex-1 min-w-0">
+                  {block.content.badge && (
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, badge: e.currentTarget.innerText } })}
+                      style={{
+                        color: block.content.accentColor || '#ff6b00',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        marginBottom: '4px'
+                      }}
+                      className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
+                    >
+                      {block.content.badge}
+                    </div>
+                  )}
+
+                  <h3
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, title: e.currentTarget.innerText } })}
+                    style={{
+                      color: '#ffffff',
+                      fontSize: '18px',
+                      fontWeight: 800,
+                      margin: '0 0 4px 0'
+                    }}
+                    className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
+                  >
+                    {block.content.title || 'Super Live com PH'}
+                  </h3>
+
+                  <p
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, dates: e.currentTarget.innerText } })}
+                    style={{
+                      color: block.content.accentColor || '#ff8a00',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      margin: '0 0 2px 0'
+                    }}
+                    className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
+                  >
+                    {block.content.dates || '🗓️ Dias 19 e 20/11'}
+                  </p>
+
+                  <p
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, times: e.currentTarget.innerText } })}
+                    style={{
+                      color: '#cbd5e1',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      margin: 0
+                    }}
+                    className="outline-none focus:bg-indigo-50/20 rounded px-1 -mx-1"
+                  >
+                    {block.content.times || '🕒 12h às 14h • 20h às 22h'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {block.type === 'html' && (
               <div 
                 className="my-2 overflow-hidden"
