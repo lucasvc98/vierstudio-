@@ -1,0 +1,1011 @@
+import React from 'react';
+import { 
+  AlignLeft, AlignCenter, AlignRight, AlignJustify, 
+  Bold, Italic, Link2, Image as ImageIcon, Sliders, 
+  Smartphone, Monitor, Eye, Sparkles, FolderOpen, Tag,
+  LayoutGrid, Plus, Minus, Trash2, Copy
+} from 'lucide-react';
+import { EmailBlock, EmailRow, EmailColumn, GlobalEmailSettings } from '../../types/email';
+
+interface RightSidebarProps {
+  selectedBlock: EmailBlock | null;
+  selectedRow: EmailRow | null;
+  onUpdateBlock: (updated: EmailBlock) => void;
+  onUpdateRow: (updated: EmailRow) => void;
+  onOpenFileManager: () => void;
+  onDeselectBlock?: () => void;
+  globalSettings: GlobalEmailSettings;
+}
+
+export const RightSidebar: React.FC<RightSidebarProps> = ({
+  selectedBlock,
+  selectedRow,
+  onUpdateBlock,
+  onUpdateRow,
+  onOpenFileManager,
+  onDeselectBlock,
+  globalSettings
+}) => {
+  // Handler to change column/window quantity dynamically
+  const handleChangeColumnCount = (targetCount: number) => {
+    if (!selectedRow) return;
+    if (targetCount < 1 || targetCount > 4) return;
+    const currentCount = selectedRow.columns.length;
+    if (currentCount === targetCount) return;
+
+    let newLayout: EmailRow['layout'] = '1-col';
+    if (targetCount === 2) newLayout = '2-col-equal';
+    else if (targetCount === 3) newLayout = '3-col';
+    else if (targetCount === 4) newLayout = '4-col';
+
+    const widthPct = Math.round((100 / targetCount) * 1000) / 1000;
+
+    let newColumns: EmailColumn[] = [];
+
+    if (targetCount < currentCount) {
+      newColumns = selectedRow.columns.slice(0, targetCount).map(col => ({
+        ...col,
+        widthPercentage: widthPct
+      }));
+    } else {
+      newColumns = selectedRow.columns.map(col => ({
+        ...col,
+        widthPercentage: widthPct
+      }));
+
+      const lastCol = selectedRow.columns[selectedRow.columns.length - 1];
+      const itemsToAdd = targetCount - currentCount;
+
+      const sampleProducts = [
+        { title: 'CAMISETAS', desc: 'Versatilidade com acabamento premium.', img: 'https://acdn-us.mitiendanube.com/stores/004/400/645/products/img_9997-66be88d6a98713955c17879257591779-640-0.webp' },
+        { title: 'LOAFERS', desc: 'Elegância e conforto em cada passo.', img: 'https://acdn-us.mitiendanube.com/stores/004/400/645/products/img_9345-aa0c59bde831b0659d17875312406767-640-0.webp' },
+        { title: 'COLETES', desc: 'Camadas marcantes para composições premium.', img: 'https://acdn-us.mitiendanube.com/stores/004/400/645/products/img_2599-359b4eb742e7340b4117816300103197-640-0.webp' },
+        { title: 'ACESSÓRIOS', desc: 'Presença e acabamento em cada detalhe.', img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80' }
+      ];
+
+      for (let i = 0; i < itemsToAdd; i++) {
+        const newColIndex = currentCount + i + 1;
+        if (lastCol && lastCol.blocks.length > 0) {
+          const sample = sampleProducts[(newColIndex - 1) % sampleProducts.length];
+          const clonedBlocks = lastCol.blocks.map(b => {
+            const newId = `blk-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+            if (b.type === 'image') {
+              return {
+                ...JSON.parse(JSON.stringify(b)),
+                id: newId,
+                content: {
+                  ...b.content,
+                  alt: sample.title,
+                  url: sample.img
+                }
+              };
+            }
+            if (b.type === 'heading') {
+              return {
+                ...JSON.parse(JSON.stringify(b)),
+                id: newId,
+                content: {
+                  ...b.content,
+                  text: sample.title
+                }
+              };
+            }
+            if (b.type === 'text') {
+              if (b.content.html && b.content.html.includes('VER MODELOS')) {
+                return {
+                  ...JSON.parse(JSON.stringify(b)),
+                  id: newId
+                };
+              }
+              return {
+                ...JSON.parse(JSON.stringify(b)),
+                id: newId,
+                content: {
+                  html: sample.desc,
+                  text: sample.desc
+                }
+              };
+            }
+            return {
+              ...JSON.parse(JSON.stringify(b)),
+              id: newId
+            };
+          });
+
+          newColumns.push({
+            id: `col-${Date.now()}-${i}`,
+            widthPercentage: widthPct,
+            style: { ...lastCol.style },
+            blocks: clonedBlocks
+          });
+        }
+      }
+    }
+
+    onUpdateRow({
+      ...selectedRow,
+      layout: newLayout,
+      columns: newColumns
+    });
+  };
+
+  if (!selectedBlock && !selectedRow) {
+    return (
+      <aside className="w-80 h-full bg-white border-l border-slate-200 p-6 flex flex-col items-center justify-center text-center select-none text-slate-400 shrink-0">
+        <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 mb-3">
+          <Sliders className="w-5 h-5" />
+        </div>
+        <p className="text-xs font-bold text-slate-700">Nenhum elemento selecionado</p>
+        <p className="text-[11px] text-slate-400 mt-1 max-w-[200px]">
+          Clique em qualquer texto, imagem, botão ou linha no canvas para personalizar suas propriedades.
+        </p>
+      </aside>
+    );
+  }
+
+  // If a row is selected (and no specific block inside is active)
+  if (!selectedBlock && selectedRow) {
+    return (
+      <aside className="w-80 h-full min-h-0 bg-white border-l border-slate-200 p-4 overflow-y-auto select-none shrink-0 pb-24 space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <LayoutGrid className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-slate-900">Configurações da Janela / Seção</h3>
+              <span className="text-[10px] text-indigo-600 font-semibold">{selectedRow.columns.length} Janelas de Produtos</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ================= QUANTIDADE DE JANELAS / PRODUTOS ================= */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-900 block">
+                  Quantidade de Janelas
+                </label>
+                <span className="text-[10px] text-slate-500">
+                  Imagens ou produtos lado a lado
+                </span>
+              </div>
+            </div>
+            <span className="text-xs font-extrabold bg-indigo-600 text-white px-2.5 py-0.5 rounded-full shadow-2xs font-mono">
+              {selectedRow.columns.length} {selectedRow.columns.length === 1 ? 'Janela' : 'Janelas'}
+            </span>
+          </div>
+
+          {/* 1, 2, 3, 4 window selector */}
+          <div className="grid grid-cols-4 gap-1.5 pt-1">
+            {[1, 2, 3, 4].map((num) => (
+              <button
+                key={num}
+                onClick={() => handleChangeColumnCount(num)}
+                className={`py-2 px-1 text-center rounded-xl font-bold transition-all flex flex-col items-center gap-1 ${
+                  selectedRow.columns.length === num
+                    ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-600 ring-offset-1'
+                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50/50 hover:border-indigo-300'
+                }`}
+              >
+                <span className="text-base font-black leading-none">{num}</span>
+                <span className="text-[9px] uppercase tracking-tighter">
+                  {num === 1 ? 'Janela' : 'Janelas'}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <button
+              disabled={selectedRow.columns.length <= 1}
+              onClick={() => handleChangeColumnCount(selectedRow.columns.length - 1)}
+              className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 disabled:opacity-40 disabled:pointer-events-none text-xs font-bold flex items-center gap-1 transition-colors"
+            >
+              <Minus className="w-3 h-3" /> Remover
+            </button>
+            <button
+              disabled={selectedRow.columns.length >= 4}
+              onClick={() => handleChangeColumnCount(selectedRow.columns.length + 1)}
+              className="px-2.5 py-1 rounded-lg border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-600 hover:text-white disabled:opacity-40 disabled:pointer-events-none text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs"
+            >
+              <Plus className="w-3 h-3" /> Adicionar Janela
+            </button>
+          </div>
+        </div>
+
+        {/* ================= GERENCIAR CONTEÚDOS DAS JANELAS ================= */}
+        <div className="space-y-3">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+            <span>Editar Conteúdo das Janelas</span>
+          </div>
+
+          {selectedRow.columns.map((col, colIdx) => {
+            const imgBlock = col.blocks.find(b => b.type === 'image');
+            const headingBlock = col.blocks.find(b => b.type === 'heading');
+            const textBlocks = col.blocks.filter(b => b.type === 'text');
+            const descBlock = textBlocks.find(b => !b.content.html || !b.content.html.includes('VER MODELOS'));
+            const linkBlock = textBlocks.find(b => b.content.html && b.content.html.includes('VER MODELOS'));
+
+            return (
+              <div key={col.id} className="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold">
+                      {colIdx + 1}
+                    </span>
+                    <span>Janela {colIdx + 1}</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {Math.round(col.widthPercentage)}% largura
+                  </span>
+                </div>
+
+                {/* Image preview & URL */}
+                {imgBlock && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
+                      Imagem do Produto
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <img 
+                        src={imgBlock.content.url} 
+                        alt={imgBlock.content.alt || ''} 
+                        className="w-12 h-12 object-cover rounded-lg border border-slate-200 bg-slate-50 shrink-0" 
+                      />
+                      <div className="flex-1 space-y-1">
+                        <input
+                          type="text"
+                          value={imgBlock.content.url || ''}
+                          onChange={(e) => {
+                            const updatedCols = selectedRow.columns.map(c => {
+                              if (c.id !== col.id) return c;
+                              return {
+                                ...c,
+                                blocks: c.blocks.map(b => b.id === imgBlock.id ? { ...b, content: { ...b.content, url: e.target.value } } : b)
+                              };
+                            });
+                            onUpdateRow({ ...selectedRow, columns: updatedCols });
+                          }}
+                          placeholder="URL da imagem (HTTPS)"
+                          className="w-full text-xs p-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                        />
+                        <button
+                          onClick={onOpenFileManager}
+                          className="text-[10px] text-indigo-600 font-bold hover:underline flex items-center gap-1"
+                        >
+                          <FolderOpen className="w-3 h-3" /> Trocar na Biblioteca
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Title input */}
+                {headingBlock && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
+                      Título
+                    </label>
+                    <input
+                      type="text"
+                      value={headingBlock.content.text || ''}
+                      onChange={(e) => {
+                        const updatedCols = selectedRow.columns.map(c => {
+                          if (c.id !== col.id) return c;
+                          return {
+                            ...c,
+                            blocks: c.blocks.map(b => b.id === headingBlock.id ? { ...b, content: { ...b.content, text: e.target.value } } : b)
+                          };
+                        });
+                        onUpdateRow({ ...selectedRow, columns: updatedCols });
+                      }}
+                      placeholder="Ex: CAMISETAS"
+                      className="w-full text-xs p-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 font-semibold"
+                    />
+                  </div>
+                )}
+
+                {/* Description input */}
+                {descBlock && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
+                      Descrição
+                    </label>
+                    <input
+                      type="text"
+                      value={descBlock.content.text || ''}
+                      onChange={(e) => {
+                        const updatedCols = selectedRow.columns.map(c => {
+                          if (c.id !== col.id) return c;
+                          return {
+                            ...c,
+                            blocks: c.blocks.map(b => b.id === descBlock.id ? { ...b, content: { html: e.target.value, text: e.target.value } } : b)
+                          };
+                        });
+                        onUpdateRow({ ...selectedRow, columns: updatedCols });
+                      }}
+                      placeholder="Ex: Versatilidade com acabamento premium."
+                      className="w-full text-xs p-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 text-slate-600"
+                    />
+                  </div>
+                )}
+
+                {/* Link / Button */}
+                {linkBlock && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
+                      Texto do Link
+                    </label>
+                    <input
+                      type="text"
+                      value={linkBlock.content.text || 'VER MODELOS'}
+                      onChange={(e) => {
+                        const updatedCols = selectedRow.columns.map(c => {
+                          if (c.id !== col.id) return c;
+                          return {
+                            ...c,
+                            blocks: c.blocks.map(b => {
+                              if (b.id !== linkBlock.id) return b;
+                              const text = e.target.value;
+                              const newHtml = `<div style="text-align: center;"><a href="#" target="_blank" style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 18px; font-weight: 800; letter-spacing: 1px; color: #111111; text-decoration: none; border-bottom: 2px solid #b88a2a; padding-bottom: 4px; display: inline-block;">${text}</a></div>`;
+                              return { ...b, content: { html: newHtml, text } };
+                            })
+                          };
+                        });
+                        onUpdateRow({ ...selectedRow, columns: updatedCols });
+                      }}
+                      className="w-full text-xs p-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 font-bold"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Row Background Color */}
+        <div className="pt-2 border-t border-slate-100 space-y-3">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Aparência da Linha
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor de Fundo da Linha</label>
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+              <input
+                type="color"
+                value={selectedRow.style.backgroundColor || '#ffffff'}
+                onChange={e => onUpdateRow({
+                  ...selectedRow,
+                  style: { ...selectedRow.style, backgroundColor: e.target.value }
+                })}
+                className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+              />
+              <input
+                type="text"
+                value={selectedRow.style.backgroundColor || '#ffffff'}
+                onChange={e => onUpdateRow({
+                  ...selectedRow,
+                  style: { ...selectedRow.style, backgroundColor: e.target.value }
+                })}
+                className="w-full text-xs font-mono uppercase focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Padding */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Padding Superior</label>
+              <input
+                type="number"
+                value={selectedRow.style.paddingTop ?? 16}
+                onChange={e => onUpdateRow({
+                  ...selectedRow,
+                  style: { ...selectedRow.style, paddingTop: Number(e.target.value) }
+                })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Padding Inferior</label>
+              <input
+                type="number"
+                value={selectedRow.style.paddingBottom ?? 16}
+                onChange={e => onUpdateRow({
+                  ...selectedRow,
+                  style: { ...selectedRow.style, paddingBottom: Number(e.target.value) }
+                })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Padding Lateral</label>
+              <input
+                type="number"
+                value={selectedRow.style.paddingLeft ?? 24}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  onUpdateRow({
+                    ...selectedRow,
+                    style: { ...selectedRow.style, paddingLeft: val, paddingRight: val }
+                  });
+                }}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Borda (px)</label>
+              <input
+                type="number"
+                value={selectedRow.style.borderWidth ?? 0}
+                onChange={e => onUpdateRow({
+                  ...selectedRow,
+                  style: { ...selectedRow.style, borderWidth: Number(e.target.value) }
+                })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  // Active Block is selected
+  const block = selectedBlock!;
+  const updateContent = (fields: Record<string, any>) => {
+    onUpdateBlock({
+      ...block,
+      content: { ...block.content, ...fields }
+    });
+  };
+
+  const updateStyle = (fields: Partial<EmailBlock['style']>) => {
+    onUpdateBlock({
+      ...block,
+      style: { ...block.style, ...fields }
+    });
+  };
+
+  return (
+    <aside className="w-80 h-full min-h-0 bg-white border-l border-slate-200 p-4 overflow-y-auto select-none shrink-0 pb-24">
+      
+      {/* Multi-window shortcut banner if block is part of multi-column row */}
+      {selectedRow && selectedRow.columns.length > 1 && onDeselectBlock && (
+        <div className="mb-4 p-3 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="w-4 h-4 text-indigo-600 shrink-0" />
+            <div>
+              <span className="text-xs font-bold text-indigo-950 block">
+                Seção com {selectedRow.columns.length} Janelas
+              </span>
+              <span className="text-[10px] text-indigo-600">
+                Altere a quantidade de colunas / imagens
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onDeselectBlock}
+            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg shadow-xs transition-colors shrink-0"
+          >
+            Configurar Janelas
+          </button>
+        </div>
+      )}
+
+      {/* Block Type Header */}
+      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs uppercase">
+            {block.type.slice(0, 2)}
+          </div>
+          <div>
+            <h3 className="text-xs font-bold text-slate-900 capitalize">Bloco: {block.type}</h3>
+            <span className="text-[10px] text-slate-400 font-mono">ID: {block.id.slice(0, 10)}</span>
+          </div>
+        </div>
+
+        {/* Device Visibility Selector */}
+        <div className="flex items-center border border-slate-200 rounded-lg p-0.5 bg-slate-50">
+          <button
+            onClick={() => onUpdateBlock({ ...block, deviceVisibility: 'all' })}
+            title="Visível em todos os dispositivos"
+            className={`p-1 rounded ${block.deviceVisibility === 'all' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400'}`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onUpdateBlock({ ...block, deviceVisibility: 'desktop' })}
+            title="Somente Desktop"
+            className={`p-1 rounded ${block.deviceVisibility === 'desktop' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400'}`}
+          >
+            <Monitor className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onUpdateBlock({ ...block, deviceVisibility: 'mobile' })}
+            title="Somente Mobile"
+            className={`p-1 rounded ${block.deviceVisibility === 'mobile' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400'}`}
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        
+        {/* ================= HEADING CONFIG ================= */}
+        {block.type === 'heading' && (
+          <>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Texto do Título</label>
+              <textarea
+                rows={2}
+                value={block.content.text || ''}
+                onChange={e => updateContent({ text: e.target.value })}
+                className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Nível de Título</label>
+                <select
+                  value={block.content.level || 'h2'}
+                  onChange={e => updateContent({ level: e.target.value })}
+                  className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+                >
+                  <option value="h1">H1 (Principal - 28px)</option>
+                  <option value="h2">H2 (Seção - 22px)</option>
+                  <option value="h3">H3 (Subtítulo - 18px)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tamanho (px)</label>
+                <input
+                  type="number"
+                  value={block.style.fontSize || 22}
+                  onChange={e => updateStyle({ fontSize: Number(e.target.value) })}
+                  className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ================= TEXT CONFIG ================= */}
+        {block.type === 'text' && (
+          <>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Conteúdo do Parágrafo</label>
+              <textarea
+                rows={4}
+                value={block.content.html || block.content.text || ''}
+                onChange={e => updateContent({ html: e.target.value, text: e.target.value })}
+                className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 font-sans"
+              />
+              <div className="flex flex-wrap gap-1 mt-1">
+                <span className="text-[10px] text-slate-400">Inserir tag:</span>
+                {['{{nome}}', '{{email}}', '{{empresa}}', '{{cupom}}'].map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      const cur = block.content.html || '';
+                      updateContent({ html: `${cur} ${tag}` });
+                    }}
+                    className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-mono"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tamanho da Fonte</label>
+                <input
+                  type="number"
+                  value={block.style.fontSize || 15}
+                  onChange={e => updateStyle({ fontSize: Number(e.target.value) })}
+                  className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Altura de Linha</label>
+                <select
+                  value={block.style.lineHeight || 1.6}
+                  onChange={e => updateStyle({ lineHeight: Number(e.target.value) })}
+                  className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+                >
+                  <option value={1.2}>1.2 (Compacta)</option>
+                  <option value={1.4}>1.4 (Normal)</option>
+                  <option value={1.6}>1.6 (Espaçada)</option>
+                  <option value={1.8}>1.8 (Leitura Fácil)</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ================= BUTTON CONFIG ================= */}
+        {block.type === 'button' && (
+          <>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Texto do Botão</label>
+              <input
+                type="text"
+                value={block.content.text || ''}
+                onChange={e => updateContent({ text: e.target.value })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Link de Destino (URL)</label>
+              <div className="relative">
+                <Link2 className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="https://seusite.com.br/pagina"
+                  value={block.content.url || ''}
+                  onChange={e => updateContent({ url: e.target.value })}
+                  className="w-full text-xs pl-8 pr-2.5 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                />
+              </div>
+            </div>
+
+            {/* Button Style Presets */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Estilo Predefinido</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { name: 'Preenchido', bg: '#6366f1', text: '#ffffff', border: 0 },
+                  { name: 'Contorno', bg: 'transparent', text: '#6366f1', border: 2, borderColor: '#6366f1' },
+                  { name: 'Minimalista', bg: '#f1f5f9', text: '#0f172a', border: 0 },
+                  { name: 'Promocional', bg: '#dc2626', text: '#ffffff', border: 0 },
+                  { name: 'Compra CTA', bg: '#059669', text: '#ffffff', border: 0 },
+                  { name: 'Corporativo', bg: '#0f172a', text: '#ffffff', border: 0 }
+                ].map(pst => (
+                  <button
+                    key={pst.name}
+                    onClick={() => updateStyle({
+                      backgroundColor: pst.bg,
+                      color: pst.text,
+                      borderWidth: pst.border,
+                      borderColor: pst.borderColor || pst.bg
+                    })}
+                    className="p-1.5 border border-slate-200 hover:border-indigo-400 rounded-md text-[11px] font-medium text-slate-700 text-center transition-colors hover:bg-indigo-50/20"
+                  >
+                    {pst.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor do Botão</label>
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+                  <input
+                    type="color"
+                    value={block.style.backgroundColor || '#6366f1'}
+                    onChange={e => updateStyle({ backgroundColor: e.target.value })}
+                    className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={block.style.backgroundColor || '#6366f1'}
+                    onChange={e => updateStyle({ backgroundColor: e.target.value })}
+                    className="w-full text-[11px] font-mono focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor do Texto</label>
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+                  <input
+                    type="color"
+                    value={block.style.color || '#ffffff'}
+                    onChange={e => updateStyle({ color: e.target.value })}
+                    className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={block.style.color || '#ffffff'}
+                    onChange={e => updateStyle({ color: e.target.value })}
+                    className="w-full text-[11px] font-mono focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center text-[11px] font-semibold text-slate-700 mb-1">
+                <span>Arredondamento</span>
+                <span className="font-mono text-indigo-600">{block.style.borderRadius ?? 6} px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="30"
+                value={block.style.borderRadius ?? 6}
+                onChange={e => updateStyle({ borderRadius: Number(e.target.value) })}
+                className="w-full accent-indigo-600 cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <label className="text-[11px] font-semibold text-slate-700">Largura Total (100%)</label>
+              <input
+                type="checkbox"
+                checked={block.content.fullWidth || false}
+                onChange={e => updateContent({ fullWidth: e.target.checked })}
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+              />
+            </div>
+          </>
+        )}
+
+        {/* ================= IMAGE & LOGO CONFIG ================= */}
+        {(block.type === 'image' || block.type === 'logo') && (
+          <>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">URL da Imagem</label>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={block.content.url || ''}
+                  onChange={e => updateContent({ url: e.target.value })}
+                  placeholder="https://..."
+                  className="flex-1 text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                />
+                <button
+                  onClick={onOpenFileManager}
+                  title="Abrir Gerenciador de Arquivos"
+                  className="px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Trocar</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Texto Alternativo (Alt Text)</label>
+              <input
+                type="text"
+                placeholder="Descrição da imagem para leitores de tela..."
+                value={block.content.alt || ''}
+                onChange={e => updateContent({ alt: e.target.value })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Link ao Clicar (Opcional)</label>
+              <input
+                type="text"
+                placeholder="https://..."
+                value={block.content.link || ''}
+                onChange={e => updateContent({ link: e.target.value })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Largura</label>
+              <input
+                type="text"
+                value={block.content.width || '100%'}
+                onChange={e => updateContent({ width: e.target.value })}
+                placeholder="Ex: 100%, 300px, 140"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center text-[11px] font-semibold text-slate-700 mb-1">
+                <span>Arredondamento das Bordas</span>
+                <span className="font-mono text-indigo-600">{block.style.borderRadius ?? 6} px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="30"
+                value={block.style.borderRadius ?? 6}
+                onChange={e => updateStyle({ borderRadius: Number(e.target.value) })}
+                className="w-full accent-indigo-600 cursor-pointer"
+              />
+            </div>
+          </>
+        )}
+
+        {/* ================= COUPON CONFIG ================= */}
+        {block.type === 'coupon' && (
+          <>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Código do Cupom</label>
+              <input
+                type="text"
+                value={block.content.code || '{{cupom}}'}
+                onChange={e => updateContent({ code: e.target.value })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg font-mono focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Texto de Destaque</label>
+              <input
+                type="text"
+                value={block.content.discount || '20% OFF'}
+                onChange={e => updateContent({ discount: e.target.value })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Descrição</label>
+              <input
+                type="text"
+                value={block.content.description || ''}
+                onChange={e => updateContent({ description: e.target.value })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+          </>
+        )}
+
+        {/* ================= PRODUCT CONFIG ================= */}
+        {block.type === 'product' && (
+          <>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Título do Produto</label>
+              <input
+                type="text"
+                value={block.content.title || ''}
+                onChange={e => updateContent({ title: e.target.value })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Preço Original</label>
+                <input
+                  type="text"
+                  value={block.content.oldPrice || ''}
+                  onChange={e => updateContent({ oldPrice: e.target.value })}
+                  placeholder="R$ 499,00"
+                  className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Preço com Desconto</label>
+                <input
+                  type="text"
+                  value={block.content.price || ''}
+                  onChange={e => updateContent({ price: e.target.value })}
+                  placeholder="R$ 299,00"
+                  className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none font-bold"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Imagem do Produto</label>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={block.content.imageUrl || ''}
+                  onChange={e => updateContent({ imageUrl: e.target.value })}
+                  className="flex-1 text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+                />
+                <button
+                  onClick={onOpenFileManager}
+                  className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold"
+                >
+                  Trocar
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Texto do Botão</label>
+              <input
+                type="text"
+                value={block.content.buttonText || 'Comprar Agora'}
+                onChange={e => updateContent({ buttonText: e.target.value })}
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+              />
+            </div>
+          </>
+        )}
+
+        {/* ================= ALIGNMENT & COLOR PROPERTIES (COMMON) ================= */}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-1">Alinhamento</label>
+          <div className="grid grid-cols-4 border border-slate-200 rounded-lg p-0.5 bg-slate-50">
+            {[
+              { id: 'left', icon: AlignLeft },
+              { id: 'center', icon: AlignCenter },
+              { id: 'right', icon: AlignRight },
+              { id: 'justify', icon: AlignJustify }
+            ].map(item => {
+              const Icon = item.icon;
+              const isSelected = (block.style.textAlign || 'left') === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => updateStyle({ textAlign: item.id as any })}
+                  className={`flex items-center justify-center py-1.5 rounded-md transition-colors ${
+                    isSelected ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Color picker for text blocks */}
+        {(block.type === 'heading' || block.type === 'text') && (
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cor do Texto</label>
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg p-1 bg-white">
+              <input
+                type="color"
+                value={block.style.color || '#334155'}
+                onChange={e => updateStyle({ color: e.target.value })}
+                className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+              />
+              <input
+                type="text"
+                value={block.style.color || '#334155'}
+                onChange={e => updateStyle({ color: e.target.value })}
+                className="w-full text-xs font-mono focus:outline-none uppercase"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Margins & Spacings */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Margem Superior</label>
+            <input
+              type="number"
+              value={block.style.marginTop ?? 4}
+              onChange={e => updateStyle({ marginTop: Number(e.target.value) })}
+              className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Margem Inferior</label>
+            <input
+              type="number"
+              value={block.style.marginBottom ?? 12}
+              onChange={e => updateStyle({ marginBottom: Number(e.target.value) })}
+              className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+            />
+          </div>
+        </div>
+
+      </div>
+
+    </aside>
+  );
+};
