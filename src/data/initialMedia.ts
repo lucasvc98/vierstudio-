@@ -2,6 +2,18 @@ import { MediaAsset } from '../types/email';
 
 export const INITIAL_MEDIA_ASSETS: MediaAsset[] = [
   {
+    id: 'media-monetter-banner',
+    folder: 'Banners',
+    name: 'monetter-superlive-ph-banner.jpg',
+    url: '/templates/monetter/banner-superlive-ph.jpg',
+    sizeBytes: 186918,
+    width: 1024,
+    height: 576,
+    mimeType: 'image/jpeg',
+    altText: 'Super Live PH - Já teve prejuízo no trading com essas corretoras?',
+    createdAt: '2026-11-15T15:55:00Z'
+  },
+  {
     id: 'media-01',
     folder: 'Banners',
     name: 'black-friday-neon.jpg',

@@ -1,6 +1,537 @@
 import { TemplateModel, EmailDocument } from '../types/email';
 
 export const INITIAL_TEMPLATES: TemplateModel[] = [
+  // ================= MONETTER & PH - MERCADO FINANCEIRO / SUPER LIVE =================
+  {
+    id: 'tmpl-monetter-superlive-ph',
+    name: 'Monetter — Já teve prejuízo no trading? (Super Live com PH)',
+    category: 'promocional',
+    categoryLabel: 'Mercado Financeiro',
+    description: 'Template oficial de alta conversão para o nicho de trading e mercado financeiro. Chamada exclusiva para o Grupo VIP e Super Live com o PH, recuperação de loss e 10 premiações.',
+    badge: 'Super Live Exclusiva',
+    thumbnailUrl: '/templates/monetter/banner-superlive-ph.jpg',
+    document: {
+      id: 'doc-monetter-superlive-01',
+      name: 'Monetter — Já teve prejuízo no trading? (Super Live com PH)',
+      subject: 'Já teve prejuízo no trading? 👀 (Super Live com PH nos dias 19 e 20/11)',
+      preheader: 'PH vai revelar na Super Live erros que muitos traders cometem e como virar a chave. +10 premiações ao vivo.',
+      folder: 'Campanhas 2026',
+      globalSettings: {
+        containerWidth: 600,
+        bodyBgColor: '#080a0f',
+        contentBgColor: '#0f141f',
+        defaultFontFamily: "'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
+        defaultTextColor: '#cbd5e1',
+        defaultHeadingColor: '#ffffff',
+        defaultLinkColor: '#ff6b00',
+        defaultButtonBg: '#ff6b00',
+        defaultButtonTextColor: '#ffffff',
+        defaultButtonRadius: 8,
+        containerBorderWidth: 1,
+        containerBorderColor: '#1e293b',
+        containerRadius: 12,
+        sectionSpacing: 0
+      },
+      createdAt: '2026-11-15T15:55:00Z',
+      updatedAt: '2026-11-15T15:55:00Z',
+      rows: [
+        // 1. Barra de Topo / Marca Monetter
+        {
+          id: 'row-monetter-header',
+          layout: '1-col',
+          style: {
+            backgroundColor: '#0f141f',
+            paddingTop: 18,
+            paddingBottom: 16,
+            paddingLeft: 24,
+            paddingRight: 24
+          },
+          columns: [
+            {
+              id: 'col-monetter-header',
+              widthPercentage: 100,
+              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+              blocks: [
+                {
+                  id: 'blk-monetter-header-text',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="left" style="vertical-align: middle;">
+                            <span style="color:#ffffff; font-size:18px; font-weight:800; letter-spacing:0.5px; font-family:'Plus Jakarta Sans', Arial, sans-serif;">MONETTER</span>
+                            <span style="color:#ff6b00; font-size:11px; margin-left:8px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">• NEGOCIE MAIS ATIVOS</span>
+                          </td>
+                          <td align="right" style="vertical-align: middle;">
+                            <span style="display:inline-block; background-color:#ff6b00; color:#ffffff; font-size:10px; font-weight:800; padding:4px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; font-family:'Plus Jakarta Sans', Arial, sans-serif;">🔴 SUPER LIVE VIP</span>
+                          </td>
+                        </tr>
+                      </table>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        },
+        // 2. Banner Hero Principal (Imagem Oficial enviada)
+        {
+          id: 'row-monetter-banner',
+          layout: '1-col',
+          style: {
+            backgroundColor: '#0f141f',
+            paddingTop: 0,
+            paddingBottom: 0,
+            paddingLeft: 0,
+            paddingRight: 0
+          },
+          columns: [
+            {
+              id: 'col-monetter-banner',
+              widthPercentage: 100,
+              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+              blocks: [
+                {
+                  id: 'blk-monetter-hero-img',
+                  type: 'image',
+                  content: {
+                    url: '/templates/monetter/banner-superlive-ph.jpg',
+                    alt: 'Já teve prejuízo no trading com essas corretoras? Não perca a Super Live com o PH nos dias 19 e 20/11',
+                    link: 'https://chat.whatsapp.com/exemplo-grupo-vip-ph',
+                    width: '100%'
+                  },
+                  style: {
+                    textAlign: 'center',
+                    marginTop: 0,
+                    marginBottom: 0
+                  },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        },
+        // 3. Título / Pergunta Provocativa
+        {
+          id: 'row-monetter-headline',
+          layout: '1-col',
+          style: {
+            backgroundColor: '#0f141f',
+            paddingTop: 32,
+            paddingBottom: 10,
+            paddingLeft: 28,
+            paddingRight: 28
+          },
+          columns: [
+            {
+              id: 'col-monetter-headline',
+              widthPercentage: 100,
+              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+              blocks: [
+                {
+                  id: 'blk-monetter-title',
+                  type: 'heading',
+                  content: {
+                    text: 'Já teve prejuízo no trading? 👀',
+                    level: 1
+                  },
+                  style: {
+                    color: '#ffffff',
+                    fontSize: 26,
+                    fontWeight: 800,
+                    textAlign: 'center',
+                    lineHeight: 1.3,
+                    marginTop: 0,
+                    marginBottom: 8
+                  },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        },
+        // 4. Copy do Evento & Box de Horários
+        {
+          id: 'row-monetter-body',
+          layout: '1-col',
+          style: {
+            backgroundColor: '#0f141f',
+            paddingTop: 4,
+            paddingBottom: 20,
+            paddingLeft: 28,
+            paddingRight: 28
+          },
+          columns: [
+            {
+              id: 'col-monetter-body',
+              widthPercentage: 100,
+              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+              blocks: [
+                {
+                  id: 'blk-monetter-copy-p1',
+                  type: 'text',
+                  content: {
+                    text: 'Nos dias <strong>19 e 20/11</strong>, o <strong>PH</strong> vai revelar na <strong>Super Live</strong> os erros que muitos traders cometem todos os dias sem perceber — e compartilhar as estratégias práticas de análise de mercado e gestão de risco profissional que você precisa para virar o jogo.'
+                  },
+                  style: {
+                    color: '#e2e8f0',
+                    fontSize: 16,
+                    lineHeight: 1.6,
+                    textAlign: 'center',
+                    marginTop: 0,
+                    marginBottom: 20
+                  },
+                  deviceVisibility: 'all'
+                },
+                {
+                  id: 'blk-monetter-schedule-box',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <div style="background: linear-gradient(135deg, rgba(255,107,0,0.12), rgba(255,107,0,0.04)); border: 1px solid #ff6b00; border-radius: 12px; padding: 18px 24px; text-align: center; margin-bottom: 8px;">
+                        <p style="color: #ff8a00; font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 0 0 6px 0; letter-spacing: 1px;">🗓️ DATAS & HORÁRIOS CONFIRMADOS</p>
+                        <p style="color: #ffffff; font-size: 16px; font-weight: 800; margin: 0 0 4px 0;">Dias 19 e 20 de Novembro</p>
+                        <p style="color: #cbd5e1; font-size: 14px; margin: 0;">
+                          <span style="color: #ffffff; font-weight: 700;">1º Turno:</span> 12h às 14h &nbsp;•&nbsp; <span style="color: #ffffff; font-weight: 700;">2º Turno:</span> 20h às 22h
+                        </p>
+                      </div>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        },
+        // 5. Grid de Premiações & Prova Social (2 Colunas)
+        {
+          id: 'row-monetter-highlights',
+          layout: '2-col-equal',
+          style: {
+            backgroundColor: '#0f141f',
+            paddingTop: 10,
+            paddingBottom: 16,
+            paddingLeft: 24,
+            paddingRight: 24
+          },
+          columns: [
+            {
+              id: 'col-monetter-card-gifts',
+              widthPercentage: 50,
+              style: {
+                backgroundColor: '#161d2b',
+                paddingTop: 16,
+                paddingBottom: 16,
+                paddingLeft: 18,
+                paddingRight: 18,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: '#2d3748'
+              },
+              blocks: [
+                {
+                  id: 'blk-card-gifts-text',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <div style="text-align:center;">
+                        <span style="font-size: 26px;">🎁</span>
+                        <h4 style="color:#ffffff; font-size:15px; font-weight:800; margin:8px 0 4px 0;">10 Premiações</h4>
+                        <p style="color:#94a3b8; font-size:13px; line-height:19px; margin:0;">
+                          E tem mais: <strong>10 premiações previstas</strong> e distribuídas ao vivo durante o evento!
+                        </p>
+                      </div>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                }
+              ]
+            },
+            {
+              id: 'col-monetter-card-social',
+              widthPercentage: 50,
+              style: {
+                backgroundColor: '#161d2b',
+                paddingTop: 16,
+                paddingBottom: 16,
+                paddingLeft: 18,
+                paddingRight: 18,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: '#2d3748'
+              },
+              blocks: [
+                {
+                  id: 'blk-card-social-text',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <div style="text-align:center;">
+                        <span style="font-size: 26px;">🔥</span>
+                        <h4 style="color:#ffffff; font-size:15px; font-weight:800; margin:8px 0 4px 0;">+400 Confirmados</h4>
+                        <p style="color:#94a3b8; font-size:13px; line-height:19px; margin:0;">
+                          Mais de <strong>400 pessoas</strong> já confirmaram presença e estão no grupo VIP.
+                        </p>
+                      </div>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        },
+        // 6. Chamada de Ação Principal (CTA)
+        {
+          id: 'row-monetter-cta',
+          layout: '1-col',
+          style: {
+            backgroundColor: '#0f141f',
+            paddingTop: 20,
+            paddingBottom: 28,
+            paddingLeft: 28,
+            paddingRight: 28
+          },
+          columns: [
+            {
+              id: 'col-monetter-cta',
+              widthPercentage: 100,
+              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+              blocks: [
+                {
+                  id: 'blk-monetter-free-notice',
+                  type: 'text',
+                  content: {
+                    text: 'O acesso ao grupo é gratuito.'
+                  },
+                  style: {
+                    color: '#4ade80',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    marginTop: 0,
+                    marginBottom: 16
+                  },
+                  deviceVisibility: 'all'
+                },
+                {
+                  id: 'blk-monetter-btn-cta',
+                  type: 'button',
+                  content: {
+                    text: '👇 [QUERO ENTRAR NO GRUPO]',
+                    link: 'https://chat.whatsapp.com/exemplo-grupo-vip-ph'
+                  },
+                  style: {
+                    backgroundColor: '#ff6b00',
+                    color: '#ffffff',
+                    fontSize: 17,
+                    fontWeight: 800,
+                    borderRadius: 8,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 32,
+                    paddingRight: 32,
+                    textAlign: 'center',
+                    width: '100%',
+                    marginTop: 0,
+                    marginBottom: 12
+                  },
+                  deviceVisibility: 'all'
+                },
+                {
+                  id: 'blk-monetter-scarcity-subtext',
+                  type: 'text',
+                  content: {
+                    text: '🔒 Grupo VIP restrito • Link oficial com acesso direto ao WhatsApp'
+                  },
+                  style: {
+                    color: '#64748b',
+                    fontSize: 12,
+                    textAlign: 'center',
+                    marginTop: 0,
+                    marginBottom: 0
+                  },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        },
+        // 7. Seção: O que você vai dominar na Super Live
+        {
+          id: 'row-monetter-learnings',
+          layout: '1-col',
+          style: {
+            backgroundColor: '#0a0e16',
+            paddingTop: 30,
+            paddingBottom: 24,
+            paddingLeft: 28,
+            paddingRight: 28
+          },
+          columns: [
+            {
+              id: 'col-monetter-learnings',
+              widthPercentage: 100,
+              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+              blocks: [
+                {
+                  id: 'blk-learnings-title',
+                  type: 'heading',
+                  content: {
+                    text: 'O que o PH vai entregar para você:',
+                    level: 2
+                  },
+                  style: {
+                    color: '#ffffff',
+                    fontSize: 20,
+                    fontWeight: 800,
+                    textAlign: 'center',
+                    marginTop: 0,
+                    marginBottom: 20
+                  },
+                  deviceVisibility: 'all'
+                },
+                {
+                  id: 'blk-learnings-list',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <table width="100%" border="0" cellpadding="0" cellspacing="0" style="color: #cbd5e1; font-size: 14px; line-height: 22px;">
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #1e293b;">
+                            <span style="color:#ff6b00; font-size:16px; margin-right:8px;">🎯</span>
+                            <strong>Como Recuperar o seu Loss:</strong> A mentalidade e o plano de ação correto para estancar perdas.
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #1e293b;">
+                            <span style="color:#ff6b00; font-size:16px; margin-right:8px;">🛡️</span>
+                            <strong>Gestão de Risco Blindada:</strong> Como proteger seu saldo para nunca quebrar a banca.
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #1e293b;">
+                            <span style="color:#ff6b00; font-size:16px; margin-right:8px;">📊</span>
+                            <strong>Erros Ocultos nas Corretoras:</strong> O que você faz sem perceber que favorece a casa.
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 10px 0;">
+                            <span style="color:#ff6b00; font-size:16px; margin-right:8px;">🎁</span>
+                            <strong>10 Premiações ao Vivo:</strong> Dinâmicas especiais exclusivas para quem estiver acompanhando.
+                          </td>
+                        </tr>
+                      </table>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        },
+        // 8. Botão Secundário de Reforço
+        {
+          id: 'row-monetter-cta-2',
+          layout: '1-col',
+          style: {
+            backgroundColor: '#0a0e16',
+            paddingTop: 8,
+            paddingBottom: 32,
+            paddingLeft: 28,
+            paddingRight: 28
+          },
+          columns: [
+            {
+              id: 'col-monetter-cta-2',
+              widthPercentage: 100,
+              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+              blocks: [
+                {
+                  id: 'blk-monetter-btn-2',
+                  type: 'button',
+                  content: {
+                    text: 'GARANTIR MINHA VAGA NO GRUPO VIP ➜',
+                    link: 'https://chat.whatsapp.com/exemplo-grupo-vip-ph'
+                  },
+                  style: {
+                    backgroundColor: '#ff6b00',
+                    color: '#ffffff',
+                    fontSize: 16,
+                    fontWeight: 800,
+                    borderRadius: 8,
+                    paddingTop: 16,
+                    paddingBottom: 16,
+                    paddingLeft: 28,
+                    paddingRight: 28,
+                    textAlign: 'center',
+                    width: '100%',
+                    marginTop: 0,
+                    marginBottom: 0
+                  },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        },
+        // 9. Rodapé / Disclaimer Financeiro Profissional (Compliance)
+        {
+          id: 'row-monetter-footer',
+          layout: '1-col',
+          style: {
+            backgroundColor: '#05070a',
+            paddingTop: 28,
+            paddingBottom: 28,
+            paddingLeft: 24,
+            paddingRight: 24
+          },
+          columns: [
+            {
+              id: 'col-monetter-footer',
+              widthPercentage: 100,
+              style: { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+              blocks: [
+                {
+                  id: 'blk-monetter-footer-text',
+                  type: 'html',
+                  content: {
+                    html: `
+                      <div style="text-align: center; font-size: 11px; line-height: 18px; color: #64748b;">
+                        <p style="margin: 0 0 10px 0; color: #94a3b8; font-weight: 700;">
+                          MONETTER • NEGOCIE MAIS ATIVOS
+                        </p>
+                        <p style="margin: 0 0 12px 0;">
+                          <strong>Aviso Legal de Risco:</strong> Operações nos mercados de trading, opções, futuros e ativos digitais envolvem risco financeiro significativo de perda. O conteúdo da Super Live tem finalidade exclusivamente educacional e de treinamento de estratégias de gestão de risco, não configurando promessa de lucros ou recomendação direta de investimentos.
+                        </p>
+                        <p style="margin: 0 0 8px 0;">
+                          © 2026 Monetter. Todos os direitos reservados.
+                        </p>
+                        <p style="margin: 0;">
+                          <a href="#" style="color: #64748b; text-decoration: underline;">Gerenciar Notificações</a> &nbsp;|&nbsp; 
+                          <a href="#" style="color: #64748b; text-decoration: underline;">Descadastrar</a>
+                        </p>
+                      </div>
+                    `
+                  },
+                  style: { marginTop: 0, marginBottom: 0 },
+                  deviceVisibility: 'all'
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
   // ================= AM OUTLET - BLACK FRIDAY (OFICIAL) =================
   {
     id: 'tmpl-am-outlet-black-friday',

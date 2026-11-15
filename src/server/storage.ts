@@ -119,8 +119,7 @@ class StorageManager {
       const exists = state.projects.some(p => 
         p.id === `proj-${tmpl.id}` || 
         p.id === tmpl.id || 
-        p.id === 'proj-am-outlet-black-friday' ||
-        p.name.toLowerCase().includes('am outlet')
+        p.name === tmpl.name
       );
       if (!exists) {
         state.projects.unshift({
