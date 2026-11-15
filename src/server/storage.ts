@@ -135,6 +135,11 @@ class StorageManager {
       }
     }
 
+    if (!state.mediaAssets || state.mediaAssets.length === 0) {
+      state.mediaAssets = [...INITIAL_MEDIA_ASSETS];
+      changed = true;
+    }
+
     // Ensure page projects exist
     if (!state.pageProjects) {
       state.pageProjects = [];
@@ -279,6 +284,11 @@ class StorageManager {
   }
 
   public getMediaAssets(): MediaAsset[] {
+    this.reloadFromFile();
+    if (!this.state.mediaAssets || this.state.mediaAssets.length === 0) {
+      this.state.mediaAssets = [...INITIAL_MEDIA_ASSETS];
+      this.saveToFile(this.state);
+    }
     return this.state.mediaAssets;
   }
 

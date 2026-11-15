@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Folder, Search, Image as ImageIcon, Trash2, Check, FolderPlus, Grid, List } from 'lucide-react';
 import { MediaAsset } from '../../types/email';
+import { compressImageFile } from '../../utils/imageOptimizer';
+import { INITIAL_MEDIA_ASSETS } from '../../data/initialMedia';
 
 interface FileManagerModalProps {
   isOpen: boolean;
@@ -23,6 +25,24 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  const getStoredCustomAssets = (): MediaAsset[] => {
+    try {
+      const raw = localStorage.getItem('vierstudio_custom_media');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveStoredCustomAssets = (item: MediaAsset) => {
+    try {
+      const current = getStoredCustomAssets().filter(a => a.id !== item.id);
+      localStorage.setItem('vierstudio_custom_media', JSON.stringify([item, ...current].slice(0, 30)));
+    } catch (e) {
+      console.warn('Could not save to localStorage', e);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchAssets();
@@ -30,62 +50,87 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
   }, [isOpen]);
 
   const fetchAssets = async () => {
+    const custom = getStoredCustomAssets();
     try {
       const res = await fetch('/api/media');
-      const data = await res.json();
-      if (data.success) {
-        setAssets(data.assets);
-        if (data.folders) {
-          setFolders(['Todos', ...data.folders]);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.assets) && data.assets.length > 0) {
+          const mergedMap = new Map<string, MediaAsset>();
+          custom.forEach(a => mergedMap.set(a.id, a));
+          data.assets.forEach((a: MediaAsset) => mergedMap.set(a.id, a));
+          INITIAL_MEDIA_ASSETS.forEach(a => {
+            if (!mergedMap.has(a.id)) mergedMap.set(a.id, a);
+          });
+          const mergedList = Array.from(mergedMap.values());
+          setAssets(mergedList);
+          if (data.folders) {
+            setFolders(['Todos', ...data.folders]);
+          }
+          return;
         }
       }
     } catch (err) {
-      console.error('Failed to load media assets', err);
+      console.warn('Could not fetch server media, using local fallback', err);
     }
+
+    // Fallback: merge INITIAL_MEDIA_ASSETS with custom uploaded assets
+    const mergedMap = new Map<string, MediaAsset>();
+    custom.forEach(a => mergedMap.set(a.id, a));
+    INITIAL_MEDIA_ASSETS.forEach(a => {
+      if (!mergedMap.has(a.id)) mergedMap.set(a.id, a);
+    });
+    setAssets(Array.from(mergedMap.values()));
   };
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
     const file = files[0];
-    const reader = new FileReader();
 
-    reader.onload = async () => {
-      const base64Url = reader.result as string;
-      const newAsset: Partial<MediaAsset> = {
+    try {
+      // Otimização e compressão inteligente: reduz de vários MBs para ~150KB (1200px máx)
+      const optimized = await compressImageFile(file, 1200, 0.85);
+
+      const newAsset: MediaAsset = {
+        id: `media-${Date.now()}`,
         name: file.name,
-        folder: selectedFolder === 'Todos' ? 'Geral' : selectedFolder,
-        url: base64Url,
-        sizeBytes: file.size,
+        folder: selectedFolder === 'Todos' ? 'Banners' : selectedFolder,
+        url: optimized.dataUrl,
+        sizeBytes: optimized.sizeBytes,
         mimeType: file.type || 'image/jpeg',
         altText: file.name.replace(/\.[^/.]+$/, ''),
-        width: 800,
-        height: 600
+        width: optimized.width,
+        height: optimized.height,
+        createdAt: new Date().toISOString()
       };
 
+      // 1. Atualiza imediatamente na tela e no localStorage
+      setAssets(prev => [newAsset, ...prev]);
+      setSelectedAsset(newAsset);
+      saveStoredCustomAssets(newAsset);
+
+      // 2. Tenta persistir no servidor em segundo plano
       try {
-        const res = await fetch('/api/media', {
+        await fetch('/api/media', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newAsset)
         });
-        const data = await res.json();
-        if (data.success) {
-          setAssets(prev => [data.asset, ...prev]);
-          setSelectedAsset(data.asset);
-        }
       } catch (err) {
-        console.error('Upload failed', err);
-      } finally {
-        setIsUploading(false);
+        console.warn('Server sync background notice:', err);
       }
-    };
-
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Upload failed', err);
+      alert('Não foi possível processar a imagem. Tente outro arquivo.');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleCreateFolder = async () => {

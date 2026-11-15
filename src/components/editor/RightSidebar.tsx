@@ -3,9 +3,10 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   Bold, Italic, Link2, Image as ImageIcon, Sliders, 
   Smartphone, Monitor, Eye, Sparkles, FolderOpen, Tag,
-  LayoutGrid, Plus, Minus, Trash2, Copy
+  LayoutGrid, Plus, Minus, Trash2, Copy, Upload
 } from 'lucide-react';
-import { EmailBlock, EmailRow, EmailColumn, GlobalEmailSettings } from '../../types/email';
+import { EmailBlock, EmailRow, EmailColumn, GlobalEmailSettings, MediaAsset } from '../../types/email';
+import { compressImageFile } from '../../utils/imageOptimizer';
 
 interface RightSidebarProps {
   selectedBlock: EmailBlock | null;
@@ -761,25 +762,81 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         {/* ================= IMAGE & LOGO CONFIG ================= */}
         {(block.type === 'image' || block.type === 'logo') && (
           <>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">URL da Imagem</label>
-              <div className="flex gap-1.5">
+            {/* Botão de Upload Direto do Computador */}
+            <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+              <label className="block text-[11px] font-bold text-indigo-900">
+                {block.type === 'image' ? 'Subir Novo Banner ou Imagem' : 'Subir Logotipo'}
+              </label>
+              
+              <label className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors">
+                <Upload className="w-4 h-4" />
+                <span>Escolher do Computador (Upload)</span>
                 <input
-                  type="text"
-                  value={block.content.url || ''}
-                  onChange={e => updateContent({ url: e.target.value })}
-                  placeholder="https://..."
-                  className="flex-1 text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files || files.length === 0) return;
+                    const file = files[0];
+                    try {
+                      const optimized = await compressImageFile(file, 1200, 0.85);
+                      updateContent({ 
+                        url: optimized.dataUrl, 
+                        alt: block.content.alt || file.name.replace(/\.[^/.]+$/, '') 
+                      });
+
+                      // Salva na galeria do navegador e sincroniza em background
+                      const newAsset: MediaAsset = {
+                        id: `media-${Date.now()}`,
+                        name: file.name,
+                        folder: 'Banners',
+                        url: optimized.dataUrl,
+                        sizeBytes: optimized.sizeBytes,
+                        mimeType: file.type || 'image/jpeg',
+                        altText: file.name.replace(/\.[^/.]+$/, ''),
+                        width: optimized.width,
+                        height: optimized.height,
+                        createdAt: new Date().toISOString()
+                      };
+                      try {
+                        const raw = localStorage.getItem('vierstudio_custom_media');
+                        const custom = raw ? JSON.parse(raw) : [];
+                        localStorage.setItem('vierstudio_custom_media', JSON.stringify([newAsset, ...custom].slice(0, 30)));
+                        fetch('/api/media', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(newAsset)
+                        }).catch(() => {});
+                      } catch {}
+                    } catch (err) {
+                      console.error('Falha no upload direto da imagem', err);
+                      alert('Não foi possível processar a imagem. Tente outro arquivo.');
+                    } finally {
+                      e.target.value = '';
+                    }
+                  }}
                 />
-                <button
-                  onClick={onOpenFileManager}
-                  title="Abrir Gerenciador de Arquivos"
-                  className="px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                >
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Trocar</span>
-                </button>
-              </div>
+              </label>
+
+              <button
+                onClick={onOpenFileManager}
+                className="w-full py-2 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+                <span>Abrir Galeria de Imagens</span>
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Ou cole uma URL Direta</label>
+              <input
+                type="text"
+                value={block.content.url || ''}
+                onChange={e => updateContent({ url: e.target.value })}
+                placeholder="https://..."
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 font-mono"
+              />
             </div>
 
             <div>

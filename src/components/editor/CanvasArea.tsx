@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { 
   Trash2, Copy, ArrowUp, ArrowDown, BookmarkPlus, 
-  Plus, Move, GripVertical, Check, ExternalLink, Play, LayoutGrid
+  Plus, Move, GripVertical, Check, ExternalLink, Play, LayoutGrid, Upload
 } from 'lucide-react';
 import { EmailBlock, EmailRow, EmailColumn, EmailDocument, DeviceVisibility } from '../../types/email';
+import { compressImageFile } from '../../utils/imageOptimizer';
 
 interface DropTargetState {
   type: 'between-rows' | 'between-blocks' | 'empty-column';
@@ -402,7 +403,7 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
             )}
 
             {block.type === 'image' && (
-              <div style={{ textAlign: block.style.textAlign || 'center' }}>
+              <div style={{ textAlign: block.style.textAlign || 'center' }} className="relative group/img-wrapper">
                 <img
                   src={block.content.url}
                   alt={block.content.alt || 'Imagem'}
@@ -413,6 +414,42 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                   }}
                   className="max-w-full h-auto object-cover select-none pointer-events-none"
                 />
+
+                {/* Botão de Troca Rápida de Banner ao passar o mouse */}
+                <label 
+                  className="absolute bottom-3 right-3 px-3 py-1.5 bg-slate-900/85 hover:bg-slate-950 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 opacity-0 group-hover/img-wrapper:opacity-100 transition-opacity cursor-pointer shadow-lg backdrop-blur-xs z-10 border border-white/20"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Subir novo banner diretamente do seu computador"
+                >
+                  <Upload className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Trocar Imagem / Banner</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = e.target.files;
+                      if (!files || files.length === 0) return;
+                      const file = files[0];
+                      try {
+                        const optimized = await compressImageFile(file, 1200, 0.85);
+                        onUpdateBlock({
+                          ...block,
+                          content: {
+                            ...block.content,
+                            url: optimized.dataUrl,
+                            alt: file.name.replace(/\.[^/.]+$/, '')
+                          }
+                        });
+                      } catch (err) {
+                        console.error('Falha ao subir banner', err);
+                        alert('Erro ao processar imagem.');
+                      } finally {
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
               </div>
             )}
 

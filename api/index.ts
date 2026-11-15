@@ -28,6 +28,7 @@ app.get('/health', (_req, res) => {
 
 // Mount full API router
 app.use('/api', apiRouter);
+app.use(apiRouter);
 
 // Public landing pages route
 app.get('/p/:slug', (req, res) => {
