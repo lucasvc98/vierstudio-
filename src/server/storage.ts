@@ -217,6 +217,7 @@ class StorageManager {
   }
 
   public saveProject(project: EmailDocument): EmailDocument {
+    this.reloadFromFile();
     const index = this.state.projects.findIndex(p => p.id === project.id);
     const updated = {
       ...project,
@@ -235,6 +236,7 @@ class StorageManager {
   }
 
   public deleteProject(id: string): boolean {
+    this.reloadFromFile();
     const before = this.state.projects.length;
     this.state.projects = this.state.projects.filter(p => p.id !== id);
     if (this.state.projects.length !== before) {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ArrowLeft, Monitor, Smartphone, Undo2, Redo2, 
   Save, Download, Check, Sparkles, Send, Eye, Code, ChevronDown,
-  Folder
+  Folder, LayoutTemplate
 } from 'lucide-react';
 import { EmailDocument } from '../../types/email';
 
@@ -13,6 +13,7 @@ interface EditorTopBarProps {
   onUpdateDocumentName: (name: string) => void;
   onBackToDashboard: () => void;
   onSave: () => void;
+  onSaveAsTemplate?: () => void;
   onExport: () => void;
   onOpenTester: () => void;
   onOpenPreviewWindow: () => void;
@@ -43,10 +44,12 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({
   onUndo,
   onRedo,
   isSaving,
-  lastSavedAt
+  lastSavedAt,
+  onSaveAsTemplate
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(doc.name);
+  const [justSaved, setJustSaved] = useState(false);
 
   const handleTitleSubmit = () => {
     setIsEditingTitle(false);
@@ -55,15 +58,31 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({
     }
   };
 
+  const handleSaveClick = () => {
+    if (document.activeElement && (document.activeElement as HTMLElement).blur) {
+      (document.activeElement as HTMLElement).blur();
+    }
+    onSave();
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2500);
+  };
+
+  const handleBackClick = () => {
+    if (document.activeElement && (document.activeElement as HTMLElement).blur) {
+      (document.activeElement as HTMLElement).blur();
+    }
+    onBackToDashboard();
+  };
+
   return (
     <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-20 shrink-0 select-none">
       
       {/* Left: Back button & Title */}
       <div className="flex items-center gap-3">
         <button
-          onClick={onBackToDashboard}
+          onClick={handleBackClick}
           className="flex items-center gap-1.5 px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg text-xs font-semibold transition-colors"
-          title="Voltar aos Meus Templates"
+          title="Salvar e voltar ao Painel"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">Painel</span>
@@ -187,14 +206,42 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({
           <span className="hidden md:inline">Auditar & Testar</span>
         </button>
 
-        {/* Save button */}
-        <button
-          onClick={onSave}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors"
-        >
-          <Save className="w-3.5 h-3.5 text-slate-500" />
-          <span className="hidden sm:inline">Salvar</span>
-        </button>
+        {/* Save button with state */}
+        {justSaved ? (
+          <span className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg shadow-2xs animate-in fade-in zoom-in-95 duration-150">
+            <Check className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Salvo!</span>
+          </span>
+        ) : isSaving ? (
+          <button
+            disabled
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 border border-slate-200 bg-slate-50 rounded-lg cursor-not-allowed"
+          >
+            <div className="w-3 h-3 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
+            <span>Salvando...</span>
+          </button>
+        ) : (
+          <button
+            onClick={handleSaveClick}
+            title="Salvar alterações agora (Ctrl+S)"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer shadow-2xs"
+          >
+            <Save className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden sm:inline">Salvar</span>
+          </button>
+        )}
+
+        {/* Save as New Template */}
+        {onSaveAsTemplate && (
+          <button
+            onClick={onSaveAsTemplate}
+            title="Salvar uma cópia deste e-mail como um novo template independente"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer shadow-2xs"
+          >
+            <LayoutTemplate className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Salvar Template</span>
+          </button>
+        )}
 
         {/* Main Export HTML Button */}
         <button

@@ -25,6 +25,7 @@ interface DashboardViewProps {
   onCreateFolder: (name: string) => Promise<string | void>;
   onDeleteFolder: (name: string) => void;
   onOpenMediaManager: () => void;
+  onSaveNewProject?: (project: EmailDocument) => void;
   user: UserProfile;
 }
 
@@ -41,6 +42,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onCreateFolder,
   onDeleteFolder,
   onOpenMediaManager,
+  onSaveNewProject,
   activeModule = 'emails',
   onChangeModule,
   user
@@ -53,6 +55,71 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [moveModalProject, setMoveModalProject] = useState<EmailDocument | null>(null);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+
+  // Ready models state (can be edited, duplicated, deleted/hidden)
+  const [readyTemplates, setReadyTemplates] = useState<TemplateModel[]>(() => {
+    try {
+      const hidden = JSON.parse(localStorage.getItem('vierstudio_hidden_ready_templates') || '[]');
+      return INITIAL_TEMPLATES.filter(t => !hidden.includes(t.id));
+    } catch {
+      return INITIAL_TEMPLATES;
+    }
+  });
+
+  const getProjectThumbnail = (proj: EmailDocument): string | undefined => {
+    if (proj.thumbnailData) return proj.thumbnailData;
+    for (const r of proj.rows || []) {
+      for (const c of r.columns || []) {
+        for (const b of c.blocks || []) {
+          if (b.type === 'image' && b.content?.url) {
+            return b.content.url;
+          }
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const handleDeleteReadyTemplate = (tmpl: TemplateModel) => {
+    if (!confirm(`Deseja realmente excluir o modelo "${tmpl.name}" da galeria de modelos prontos?`)) return;
+    setReadyTemplates(prev => prev.filter(t => t.id !== tmpl.id));
+    try {
+      const hidden = JSON.parse(localStorage.getItem('vierstudio_hidden_ready_templates') || '[]');
+      if (!hidden.includes(tmpl.id)) {
+        hidden.push(tmpl.id);
+        localStorage.setItem('vierstudio_hidden_ready_templates', JSON.stringify(hidden));
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleDuplicateReadyTemplate = (tmpl: TemplateModel) => {
+    const clonedDoc: EmailDocument = {
+      ...JSON.parse(JSON.stringify(tmpl.document)),
+      id: `proj-${Date.now()}`,
+      name: `${tmpl.name} (Cópia)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'draft',
+      thumbnailData: tmpl.thumbnailUrl,
+      folder: 'Campanhas 2026'
+    };
+    if (onSaveNewProject) {
+      onSaveNewProject(clonedDoc);
+    }
+    alert(`Modelo "${tmpl.name}" duplicado com sucesso em "Meus Templates"!`);
+    setActiveTab('my-templates');
+  };
+
+  const handleEditReadyTemplate = (tmpl: TemplateModel) => {
+    const existing = projects.find(p => p.id === `proj-${tmpl.id}` || p.id === tmpl.id);
+    if (existing) {
+      onOpenProject(existing);
+    } else {
+      onSelectTemplate(tmpl);
+    }
+  };
 
   const handleCreateFolderSubmit = async () => {
     if (!newFolderName.trim()) return;
@@ -75,7 +142,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   });
 
   // Filter ready templates
-  const filteredReadyTemplates = INITIAL_TEMPLATES.filter(t => {
+  const filteredReadyTemplates = readyTemplates.filter(t => {
     const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
     const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           t.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -224,7 +291,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Modelos Prontos ({INITIAL_TEMPLATES.length})</span>
+              <span>Modelos Prontos ({readyTemplates.length})</span>
             </button>
 
             <button
@@ -464,9 +531,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         onClick={() => onOpenProject(project)}
                         className="relative h-48 bg-slate-100 cursor-pointer overflow-hidden rounded-t-2xl border-b border-slate-100"
                       >
-                        {project.thumbnailData ? (
+                        {(project.thumbnailData || getProjectThumbnail(project)) ? (
                           <img 
-                            src={project.thumbnailData} 
+                            src={project.thumbnailData || getProjectThumbnail(project)} 
                             alt={project.name} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -478,7 +545,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         )}
 
                         {/* Status & Folder Badges */}
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap z-20">
                           <span className="bg-white/90 backdrop-blur-xs text-slate-700 font-bold text-[10px] px-2.5 py-1 rounded-md shadow-2xs uppercase tracking-wider">
                             {project.status || 'Rascunho'}
                           </span>
@@ -486,6 +553,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             <Folder className="w-3 h-3" />
                             <span>{project.folder || 'Geral'}</span>
                           </span>
+                        </div>
+
+                        {/* Top-Right: 3 Dots Menu Button on Thumbnail */}
+                        <div className="absolute top-3 right-3 z-30">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(isMenuOpen ? null : project.id);
+                            }}
+                            className={`w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all ${
+                              isMenuOpen 
+                                ? 'bg-indigo-600 text-white ring-2 ring-indigo-400' 
+                                : 'bg-white/95 hover:bg-white text-slate-700 hover:text-indigo-600'
+                            }`}
+                            title="Opções do template (Editar, Duplicar, Excluir)"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
                         </div>
 
                         {/* Quick Edit Overlay */}
@@ -532,34 +617,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                   />
                                   {/* Dropdown Menu Floating Box */}
                                   <div 
-                                    className="absolute right-0 top-8 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100"
+                                    className="absolute right-0 top-8 w-52 bg-white border border-slate-200 rounded-2xl shadow-2xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 divide-y divide-slate-100"
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <button
-                                      onClick={() => { setActiveMenuId(null); onOpenProject(project); }}
-                                      className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 font-medium transition-colors"
-                                    >
-                                      <Edit3 className="w-4 h-4 text-slate-500" /> Editar E-mail
-                                    </button>
-                                    <button
-                                      onClick={() => { setActiveMenuId(null); setMoveModalProject(project); }}
-                                      className="w-full text-left px-3.5 py-2 hover:bg-indigo-50 flex items-center gap-2.5 text-indigo-700 font-semibold transition-colors"
-                                    >
-                                      <Folder className="w-4 h-4 text-indigo-600" /> Mover para Pasta...
-                                    </button>
-                                    <button
-                                      onClick={() => { setActiveMenuId(null); onDuplicateProject(project.id); }}
-                                      className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 font-medium transition-colors"
-                                    >
-                                      <Copy className="w-4 h-4 text-slate-500" /> Duplicar Modelo
-                                    </button>
-                                    <div className="border-t border-slate-100 my-1" />
-                                    <button
-                                      onClick={() => { setActiveMenuId(null); onDeleteProject(project.id); }}
-                                      className="w-full text-left px-3.5 py-2 hover:bg-rose-50 flex items-center gap-2.5 text-rose-600 font-semibold transition-colors"
-                                    >
-                                      <Trash2 className="w-4 h-4 text-rose-500" /> Excluir E-mail
-                                    </button>
+                                    <div className="py-1">
+                                      <button
+                                        onClick={() => { setActiveMenuId(null); onOpenProject(project); }}
+                                        className="w-full text-left px-3.5 py-2 hover:bg-indigo-50 flex items-center gap-2.5 text-slate-700 hover:text-indigo-700 font-semibold transition-colors"
+                                      >
+                                        <Edit3 className="w-4 h-4 text-indigo-600" />
+                                        <span>Editar Template</span>
+                                      </button>
+                                      <button
+                                        onClick={() => { setActiveMenuId(null); onDuplicateProject(project.id); }}
+                                        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 font-medium transition-colors"
+                                      >
+                                        <Copy className="w-4 h-4 text-slate-500" />
+                                        <span>Duplicar Template</span>
+                                      </button>
+                                      <button
+                                        onClick={() => { setActiveMenuId(null); setMoveModalProject(project); }}
+                                        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 font-medium transition-colors"
+                                      >
+                                        <Folder className="w-4 h-4 text-slate-500" />
+                                        <span>Mover para Pasta...</span>
+                                      </button>
+                                    </div>
+                                    <div className="py-1">
+                                      <button
+                                        onClick={() => { setActiveMenuId(null); onDeleteProject(project.id); }}
+                                        className="w-full text-left px-3.5 py-2 hover:bg-rose-50 flex items-center gap-2.5 text-rose-600 font-semibold transition-colors"
+                                      >
+                                        <Trash2 className="w-4 h-4 text-rose-500" />
+                                        <span>Excluir Template</span>
+                                      </button>
+                                    </div>
                                   </div>
                                 </>
                               )}
@@ -597,61 +689,150 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredReadyTemplates.map(tmpl => (
-                <div 
-                  key={tmpl.id}
-                  className="group bg-white border border-slate-200 hover:border-indigo-400 hover:shadow-lg rounded-2xl overflow-hidden transition-all flex flex-col justify-between"
-                >
-                  <div className="relative h-56 bg-slate-100 overflow-hidden">
-                    <img 
-                      src={tmpl.thumbnailUrl} 
-                      alt={tmpl.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                    />
-                    
-                    {tmpl.badge && (
-                      <span className="absolute top-3 left-3 bg-indigo-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-md shadow-xs uppercase tracking-wider">
-                        {tmpl.badge}
-                      </span>
-                    )}
+              {filteredReadyTemplates.map(tmpl => {
+                const isMenuOpen = activeMenuId === tmpl.id;
+                return (
+                  <div 
+                    key={tmpl.id}
+                    className={`group bg-white border border-slate-200 hover:border-indigo-400 hover:shadow-lg rounded-2xl overflow-hidden transition-all flex flex-col justify-between relative ${
+                      isMenuOpen ? 'z-40 ring-2 ring-indigo-500/20 shadow-lg' : 'z-10'
+                    }`}
+                  >
+                    <div className="relative h-56 bg-slate-100 overflow-hidden">
+                      <img 
+                        src={tmpl.thumbnailUrl} 
+                        alt={tmpl.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                      />
+                      
+                      {tmpl.badge && (
+                        <span className="absolute top-3 left-3 bg-indigo-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-md shadow-xs uppercase tracking-wider z-20">
+                          {tmpl.badge}
+                        </span>
+                      )}
 
-                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
-                      <button
-                        onClick={() => onSelectTemplate(tmpl)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg transition-transform hover:scale-105"
-                      >
-                        Usar este Modelo
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-indigo-600 uppercase mb-1">
-                        {tmpl.category === 'ecommerce' && <ShoppingBag className="w-3.5 h-3.5" />}
-                        {tmpl.category === 'corporativo' && <Briefcase className="w-3.5 h-3.5" />}
-                        {tmpl.category === 'relacionamento' && <HeartHandshake className="w-3.5 h-3.5" />}
-                        {tmpl.category === 'promocional' && <Tag className="w-3.5 h-3.5" />}
-                        <span>{tmpl.categoryLabel}</span>
+                      {/* Top-Right: 3 Dots Menu Button on Thumbnail */}
+                      <div className="absolute top-3 right-3 z-30">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(isMenuOpen ? null : tmpl.id);
+                          }}
+                          className={`w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all ${
+                            isMenuOpen 
+                              ? 'bg-indigo-600 text-white ring-2 ring-indigo-400' 
+                              : 'bg-white/95 hover:bg-white text-slate-700 hover:text-indigo-600'
+                          }`}
+                          title="Opções do modelo (Editar, Duplicar, Excluir)"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
                       </div>
-                      <h3 className="font-bold text-slate-900 text-base mb-1">{tmpl.name}</h3>
-                      <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{tmpl.description}</p>
+
+                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
+                        <button
+                          onClick={() => handleEditReadyTemplate(tmpl)}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-1.5"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Editar Modelo</span>
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
-                        100% Editável
-                      </span>
-                      <button
-                        onClick={() => onSelectTemplate(tmpl)}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-                      >
-                        Personalizar →
-                      </button>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-indigo-600 uppercase mb-1">
+                          {tmpl.category === 'ecommerce' && <ShoppingBag className="w-3.5 h-3.5" />}
+                          {tmpl.category === 'corporativo' && <Briefcase className="w-3.5 h-3.5" />}
+                          {tmpl.category === 'relacionamento' && <HeartHandshake className="w-3.5 h-3.5" />}
+                          {tmpl.category === 'promocional' && <Tag className="w-3.5 h-3.5" />}
+                          <span>{tmpl.categoryLabel}</span>
+                        </div>
+
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 
+                            onClick={() => handleEditReadyTemplate(tmpl)}
+                            className="font-bold text-slate-900 text-base mb-1 hover:text-indigo-600 cursor-pointer line-clamp-1"
+                            title={tmpl.name}
+                          >
+                            {tmpl.name}
+                          </h3>
+
+                          {/* 3 Dots Menu beside Title */}
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuId(isMenuOpen ? null : tmpl.id);
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isMenuOpen ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                              }`}
+                              title="Opções do modelo"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+
+                            {isMenuOpen && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-40" 
+                                  onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); }} 
+                                />
+                                <div 
+                                  className="absolute right-0 top-8 w-52 bg-white border border-slate-200 rounded-2xl shadow-2xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 divide-y divide-slate-100"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div className="py-1">
+                                    <button
+                                      onClick={() => { setActiveMenuId(null); handleEditReadyTemplate(tmpl); }}
+                                      className="w-full text-left px-3.5 py-2 hover:bg-indigo-50 flex items-center gap-2.5 text-slate-700 hover:text-indigo-700 font-semibold transition-colors"
+                                    >
+                                      <Edit3 className="w-4 h-4 text-indigo-600" />
+                                      <span>Editar Template</span>
+                                    </button>
+                                    <button
+                                      onClick={() => { setActiveMenuId(null); handleDuplicateReadyTemplate(tmpl); }}
+                                      className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 font-medium transition-colors"
+                                    >
+                                      <Copy className="w-4 h-4 text-slate-500" />
+                                      <span>Duplicar Template</span>
+                                    </button>
+                                  </div>
+                                  <div className="py-1">
+                                    <button
+                                      onClick={() => { setActiveMenuId(null); handleDeleteReadyTemplate(tmpl); }}
+                                      className="w-full text-left px-3.5 py-2 hover:bg-rose-50 flex items-center gap-2.5 text-rose-600 font-semibold transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-rose-500" />
+                                      <span>Excluir Template</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{tmpl.description}</p>
+                      </div>
+
+                      <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
+                          100% Editável
+                        </span>
+                        <button
+                          onClick={() => handleEditReadyTemplate(tmpl)}
+                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                        >
+                          Personalizar →
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

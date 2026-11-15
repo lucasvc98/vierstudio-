@@ -78,9 +78,132 @@ export const App: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const saveTimeoutRef = useRef<any>(null);
+  const currentProjectRef = useRef<EmailDocument | null>(currentProject);
 
-  // Initial Load from API
   useEffect(() => {
+    currentProjectRef.current = currentProject;
+  }, [currentProject]);
+
+  // Synchronize a project into React state and localStorage immediately
+  const syncToLocalProjects = (docToSave: EmailDocument) => {
+    setProjects(prev => {
+      const idx = prev.findIndex(p => p.id === docToSave.id);
+      const next = idx >= 0
+        ? prev.map(p => p.id === docToSave.id ? docToSave : p)
+        : [docToSave, ...prev];
+      try {
+        localStorage.setItem('vierstudio_email_projects', JSON.stringify(next));
+      } catch (err) {
+        console.warn('Failed to save to localStorage:', err);
+      }
+      return next;
+    });
+  };
+
+  // Immediate save (both local and server)
+  const handleSaveProject = async (targetDoc?: EmailDocument | null, _showFeedback = true) => {
+    const docToSave = targetDoc || currentProjectRef.current || currentProject;
+    if (!docToSave) return;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
+    setIsSaving(true);
+    syncToLocalProjects(docToSave);
+
+    try {
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(docToSave)
+      });
+      setLastSavedAt(new Date());
+    } catch (err) {
+      console.error('Failed to save project:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save as a new template in the user library
+  const handleSaveAsNewTemplate = async () => {
+    const baseDoc = currentProjectRef.current || currentProject;
+    if (!baseDoc) return;
+    const templateName = prompt('Nome do novo template:', `${baseDoc.name} (Template)`);
+    if (!templateName || !templateName.trim()) return;
+
+    const newTemplateDoc: EmailDocument = {
+      ...JSON.parse(JSON.stringify(baseDoc)),
+      id: `proj-tmpl-${Date.now()}`,
+      name: templateName.trim(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'draft',
+      folder: 'Meus Templates'
+    };
+
+    await handleSaveProject(newTemplateDoc, true);
+    setCurrentProject(newTemplateDoc);
+    alert(`Template "${newTemplateDoc.name}" salvo com sucesso na sua biblioteca!`);
+  };
+
+  // Immediate save and return to dashboard
+  const handleBackToDashboard = async () => {
+    if (currentProjectRef.current || currentProject) {
+      await handleSaveProject(currentProjectRef.current || currentProject, false);
+    }
+    setCurrentView('dashboard');
+  };
+
+  // Save a brand new project from templates or duplication
+  const handleSaveNewProject = async (newDoc: EmailDocument) => {
+    syncToLocalProjects(newDoc);
+    try {
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDoc)
+      });
+    } catch (err) {
+      console.error('Error saving new project:', err);
+    }
+  };
+
+  // Save on tab close or refresh
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (currentProjectRef.current) {
+        try {
+          const raw = localStorage.getItem('vierstudio_email_projects');
+          const list: EmailDocument[] = raw ? JSON.parse(raw) : [];
+          const idx = list.findIndex(p => p.id === currentProjectRef.current!.id);
+          if (idx >= 0) list[idx] = currentProjectRef.current!;
+          else list.unshift(currentProjectRef.current!);
+          localStorage.setItem('vierstudio_email_projects', JSON.stringify(list));
+        } catch (e) {}
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Initial Load from API & localStorage
+  useEffect(() => {
+    // 1. Instant load from localStorage so user never sees empty screen
+    try {
+      const rawLocal = localStorage.getItem('vierstudio_email_projects');
+      if (rawLocal) {
+        const parsed = JSON.parse(rawLocal);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProjects(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read projects from localStorage', e);
+    }
+
     fetchInitialData();
   }, []);
 
@@ -95,8 +218,44 @@ export const App: React.FC = () => {
         fetch('/api/page-folders').then(r => r.json())
       ]);
 
-      if (projRes.success && projRes.projects) {
-        setProjects(projRes.projects);
+      if (projRes.success && Array.isArray(projRes.projects)) {
+        setProjects(prev => {
+          const mergedMap = new Map<string, EmailDocument>();
+          // Seed with server projects
+          projRes.projects.forEach((p: EmailDocument) => mergedMap.set(p.id, p));
+          // Merge with local projects
+          prev.forEach(localP => {
+            const serverP = mergedMap.get(localP.id);
+            if (!serverP) {
+              mergedMap.set(localP.id, localP);
+              // Push local project to server
+              fetch('/api/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(localP)
+              }).catch(() => {});
+            } else {
+              const localTime = new Date(localP.updatedAt || 0).getTime();
+              const serverTime = new Date(serverP.updatedAt || 0).getTime();
+              if (localTime > serverTime) {
+                mergedMap.set(localP.id, localP);
+                // Push newer local project to server
+                fetch('/api/projects', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(localP)
+                }).catch(() => {});
+              }
+            }
+          });
+          const finalList = Array.from(mergedMap.values());
+          try {
+            localStorage.setItem('vierstudio_email_projects', JSON.stringify(finalList));
+          } catch (err) {
+            console.warn(err);
+          }
+          return finalList;
+        });
       }
       if (blocksRes.success && blocksRes.blocks) {
         setSavedBlocks(blocksRes.blocks);
@@ -118,10 +277,15 @@ export const App: React.FC = () => {
     }
   };
 
-  // Keyboard Shortcuts (Undo/Redo, Escape)
+  // Keyboard Shortcuts (Undo/Redo, Escape, Ctrl+S)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (currentView === 'editor' && (currentProjectRef.current || currentProject)) {
+          handleSaveProject(currentProjectRef.current || currentProject, true);
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         if (e.shiftKey) {
           handleRedo();
         } else {
@@ -146,11 +310,15 @@ export const App: React.FC = () => {
       return;
     }
 
+    currentProjectRef.current = newDoc;
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIndex + 1);
       return [...trimmed, JSON.parse(JSON.stringify(newDoc))];
     });
     setHistoryIndex(prev => prev + 1);
+
+    // Sync to local projects immediately (no debounce for local state!)
+    syncToLocalProjects(newDoc);
 
     // Auto-save debounce
     triggerAutoSave(newDoc);
@@ -168,15 +336,6 @@ export const App: React.FC = () => {
           body: JSON.stringify(docToSave)
         });
         setLastSavedAt(new Date());
-        setProjects(prev => {
-          const idx = prev.findIndex(p => p.id === docToSave.id);
-          if (idx >= 0) {
-            const next = [...prev];
-            next[idx] = docToSave;
-            return next;
-          }
-          return [docToSave, ...prev];
-        });
       } catch (err) {
         console.error('Auto-save error', err);
       } finally {
@@ -313,31 +472,48 @@ export const App: React.FC = () => {
     }
   };
 
-  // Duplicate Project
+  // Duplicate Project / Template
   const handleDuplicateProject = async (id: string) => {
+    const original = projects.find(p => p.id === id);
+    if (!original) return;
+    const copy: EmailDocument = {
+      ...JSON.parse(JSON.stringify(original)),
+      id: `proj-${Date.now()}`,
+      name: `${original.name} (Cópia)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'draft'
+    };
+    syncToLocalProjects(copy);
     try {
-      const res = await fetch(`/api/projects/${id}/duplicate`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        setProjects(prev => [data.project, ...prev]);
-      }
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(copy)
+      });
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Delete Project
+  // Delete Project / Template
   const handleDeleteProject = async (id: string) => {
-    if (!confirm('Deseja realmente remover este projeto?')) return;
+    if (!confirm('Deseja realmente remover este template/e-mail?')) return;
     try {
       await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-      setProjects(prev => prev.filter(p => p.id !== id));
-      if (currentProject?.id === id) {
-        setCurrentProject(null);
-        setCurrentView('dashboard');
-      }
     } catch (err) {
       console.error(err);
+    }
+    setProjects(prev => {
+      const next = prev.filter(p => p.id !== id);
+      try {
+        localStorage.setItem('vierstudio_email_projects', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    if (currentProject?.id === id) {
+      setCurrentProject(null);
+      setCurrentView('dashboard');
     }
   };
 
@@ -507,10 +683,12 @@ export const App: React.FC = () => {
   };
 
   const handleUpdateBlock = (updated: EmailBlock) => {
-    if (!currentProject) return;
+    const base = currentProjectRef.current || currentProject;
+    if (!base) return;
     const nextDoc: EmailDocument = {
-      ...currentProject,
-      rows: currentProject.rows.map(row => ({
+      ...base,
+      updatedAt: new Date().toISOString(),
+      rows: base.rows.map(row => ({
         ...row,
         columns: row.columns.map(col => ({
           ...col,
@@ -518,16 +696,20 @@ export const App: React.FC = () => {
         }))
       }))
     };
+    currentProjectRef.current = nextDoc;
     setCurrentProject(nextDoc);
     pushToHistory(nextDoc);
   };
 
   const handleUpdateRow = (updated: EmailRow) => {
-    if (!currentProject) return;
+    const base = currentProjectRef.current || currentProject;
+    if (!base) return;
     const nextDoc: EmailDocument = {
-      ...currentProject,
-      rows: currentProject.rows.map(r => r.id === updated.id ? updated : r)
+      ...base,
+      updatedAt: new Date().toISOString(),
+      rows: base.rows.map(r => r.id === updated.id ? updated : r)
     };
+    currentProjectRef.current = nextDoc;
     setCurrentProject(nextDoc);
     pushToHistory(nextDoc);
   };
@@ -1014,6 +1196,7 @@ export const App: React.FC = () => {
                 onCreateFolder={handleCreateTemplateFolder}
                 onDeleteFolder={handleDeleteTemplateFolder}
                 onOpenMediaManager={() => setIsFileManagerOpen(true)}
+                onSaveNewProject={handleSaveNewProject}
                 user={user}
               />
             </div>
@@ -1030,8 +1213,9 @@ export const App: React.FC = () => {
                   }
                 }}
                 onUpdateDocumentName={handleUpdateDocumentName}
-                onBackToDashboard={() => setCurrentView('dashboard')}
-                onSave={() => triggerAutoSave(currentProject)}
+                onBackToDashboard={handleBackToDashboard}
+                onSave={() => handleSaveProject(currentProjectRef.current || currentProject, true)}
+                onSaveAsTemplate={handleSaveAsNewTemplate}
                 onExport={() => setIsExportModalOpen(true)}
                 onOpenTester={() => setIsTesterModalOpen(true)}
                 onOpenPreviewWindow={() => window.open('', '_blank')}
