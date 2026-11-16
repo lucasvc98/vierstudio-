@@ -1,5 +1,22 @@
 import { EmailDocument, EmailRow, EmailColumn, EmailBlock } from '../types/email';
 
+export const BUILTIN_CDN_ASSETS: Record<string, string> = {
+  '/templates/monetter/banner-superlive-ph.jpg': 'https://files.catbox.moe/tn263p.jpg',
+  '/templates/monetter/chart-candlestick-bg.svg': 'https://files.catbox.moe/vvozux.svg',
+  '/templates/monetter/monetter-email-preview.jpg': 'https://files.catbox.moe/tn263p.jpg',
+  '/templates/am-outlet/banner-black-friday.jpg': 'https://files.catbox.moe/a0gzd5.jpg',
+  '/logo.png': 'https://files.catbox.moe/genslu.png',
+};
+
+export function resolveEmailAssetUrl(url?: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (BUILTIN_CDN_ASSETS[trimmed]) {
+    return BUILTIN_CDN_ASSETS[trimmed];
+  }
+  return trimmed;
+}
+
 export function compileEmailHtml(doc: EmailDocument): string {
   const { globalSettings } = doc;
   const containerWidth = globalSettings.containerWidth || 600;
@@ -9,6 +26,8 @@ export function compileEmailHtml(doc: EmailDocument): string {
   const defaultText = globalSettings.defaultTextColor || '#333333';
   const defaultHeading = globalSettings.defaultHeadingColor || '#111827';
   const defaultLink = globalSettings.defaultLinkColor || '#6366f1';
+  const bodyBgImageResolved = resolveEmailAssetUrl(globalSettings.bodyBgImage);
+  const contentBgImageResolved = resolveEmailAssetUrl(globalSettings.contentBgImage);
 
   // Build Preheader hack with whitespace filler
   const preheaderText = doc.preheader ? doc.preheader.trim() : '';
@@ -41,7 +60,7 @@ export function compileEmailHtml(doc: EmailDocument): string {
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; max-width: 100%; height: auto; }
-    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; background-color: ${bodyBg}; ${globalSettings.bodyBgImage ? `background-image: url('${globalSettings.bodyBgImage}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''} font-family: ${defaultFont}; }
+    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; background-color: ${bodyBg}; ${bodyBgImageResolved ? `background-image: url('${bodyBgImageResolved}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''} font-family: ${defaultFont}; }
     a { color: ${defaultLink}; text-decoration: none; }
     
     /* Responsive Queries */
@@ -74,7 +93,7 @@ export function compileEmailHtml(doc: EmailDocument): string {
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: ${bodyBg}; ${globalSettings.bodyBgImage ? `background-image: url('${globalSettings.bodyBgImage}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''} font-family: ${defaultFont}; color: ${defaultText}; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: ${bodyBg}; ${bodyBgImageResolved ? `background-image: url('${bodyBgImageResolved}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''} font-family: ${defaultFont}; color: ${defaultText}; -webkit-font-smoothing: antialiased;">
   <!-- PREHEADER TRICK -->
   ${preheaderText ? `
   <div style="display: none; max-height: 0px; overflow: hidden; mso-hide: all; font-size: 1px; line-height: 1px; max-width: 0px; opacity: 0;">
@@ -83,7 +102,7 @@ export function compileEmailHtml(doc: EmailDocument): string {
   </div>` : ''}
 
   <!-- OUTER BACKGROUND WRAPPER -->
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${bodyBg}; ${globalSettings.bodyBgImage ? `background-image: url('${globalSettings.bodyBgImage}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''}">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${bodyBg}; ${bodyBgImageResolved ? `background-image: url('${bodyBgImageResolved}'); background-size: ${globalSettings.bodyBgSize || 'cover'}; background-position: ${globalSettings.bodyBgPosition || 'center top'}; background-repeat: ${globalSettings.bodyBgRepeat || 'no-repeat'};` : ''}">
     <tr>
       <td align="center" style="padding: 24px 12px;">
         <!--[if (gte mso 9)|(IE)]>
@@ -93,7 +112,7 @@ export function compileEmailHtml(doc: EmailDocument): string {
         <![endif]-->
         
         <!-- MAIN CONTAINER -->
-        <table role="presentation" class="email-container" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: ${containerWidth}px; background-color: ${contentBg}; ${globalSettings.contentBgImage ? `background-image: url('${globalSettings.contentBgImage}'); background-size: cover; background-position: center;` : ''} border-radius: ${globalSettings.containerRadius || 8}px; overflow: hidden; border: ${globalSettings.containerBorderWidth || 0}px solid ${globalSettings.containerBorderColor || '#e2e8f0'}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        <table role="presentation" class="email-container" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: ${containerWidth}px; background-color: ${contentBg}; ${contentBgImageResolved ? `background-image: url('${contentBgImageResolved}'); background-size: cover; background-position: center;` : ''} border-radius: ${globalSettings.containerRadius || 8}px; overflow: hidden; border: ${globalSettings.containerBorderWidth || 0}px solid ${globalSettings.containerBorderColor || '#e2e8f0'}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           ${rowsHtml}
         </table>
         
@@ -111,8 +130,9 @@ export function compileEmailHtml(doc: EmailDocument): string {
 
 function renderRow(row: EmailRow, containerWidth: number, globalSettings: any): string {
   const rowBg = row.style.backgroundColor || 'transparent';
-  const rowBgImage = row.style.backgroundImage 
-    ? `background-image: url('${row.style.backgroundImage}'); background-size: ${row.style.backgroundSize || 'cover'}; background-position: ${row.style.backgroundPosition || 'center'}; background-repeat: ${row.style.backgroundRepeat || 'no-repeat'};`
+  const resolvedRowBgImage = resolveEmailAssetUrl(row.style.backgroundImage);
+  const rowBgImage = resolvedRowBgImage 
+    ? `background-image: url('${resolvedRowBgImage}'); background-size: ${row.style.backgroundSize || 'cover'}; background-position: ${row.style.backgroundPosition || 'center'}; background-repeat: ${row.style.backgroundRepeat || 'no-repeat'};`
     : '';
   const padTop = row.style.paddingTop ?? 16;
   const padBottom = row.style.paddingBottom ?? 16;
@@ -254,7 +274,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
     }
 
     case 'image': {
-      const src = content.url || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80';
+      const src = resolveEmailAssetUrl(content.url) || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80';
       const alt = content.alt || 'Imagem do e-mail';
       const link = content.link || '';
       const width = content.width || '100%';
@@ -273,7 +293,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
     }
 
     case 'logo': {
-      const src = content.url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=240&auto=format&fit=crop&q=80';
+      const src = resolveEmailAssetUrl(content.url) || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=240&auto=format&fit=crop&q=80';
       const alt = content.alt || 'Logotipo';
       const link = content.link || '#';
       const width = content.width || 140;
@@ -371,7 +391,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
     }
 
     case 'product': {
-      const img = content.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80';
+      const img = resolveEmailAssetUrl(content.imageUrl) || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80';
       const title = content.title || 'Fone de Ouvido Premium Wireless';
       const oldPrice = content.oldPrice || 'R$ 499,00';
       const price = content.price || 'R$ 299,00';
@@ -428,7 +448,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
     }
 
     case 'hero': {
-      const bannerImg = content.imageUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&auto=format&fit=crop&q=80';
+      const bannerImg = resolveEmailAssetUrl(content.imageUrl) || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&auto=format&fit=crop&q=80';
       const title = content.title || 'Lançamento Exclusivo';
       const subtitle = content.subtitle || 'Descubra as novas soluções pensadas para potencializar seus resultados.';
       const ctaText = content.ctaText || 'Explorar Coleção';
@@ -477,7 +497,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
       const role = content.role || 'Diretor de Marketing & Produto';
       const company = content.company || 'vierstudio SaaS';
       const phone = content.phone || '+55 (11) 99999-9999';
-      const avatar = content.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+      const avatar = resolveEmailAssetUrl(content.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
       return `
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top: 16px; margin-bottom: 12px;">
@@ -496,7 +516,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
     }
 
     case 'video': {
-      const thumb = content.thumbnailUrl || 'https://images.unsplash.com/photo-1536240478700-b869070f9279?w=800&auto=format&fit=crop&q=80';
+      const thumb = resolveEmailAssetUrl(content.thumbnailUrl) || 'https://images.unsplash.com/photo-1536240478700-b869070f9279?w=800&auto=format&fit=crop&q=80';
       const link = content.videoUrl || 'https://youtube.com';
       const title = content.title || 'Assistir ao vídeo explicativo';
 
@@ -519,7 +539,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
       const sloganColor = content.sloganColor || '#ff6b00';
       const badgeBg = content.badgeBg || '#ff6b00';
       const badgeTextColor = content.badgeTextColor || '#ffffff';
-      const logoUrl = content.logoUrl;
+      const logoUrl = resolveEmailAssetUrl(content.logoUrl);
 
       return `
         <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top: ${style.marginTop ?? 0}px; margin-bottom: ${style.marginBottom ?? 0}px;">
@@ -544,7 +564,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
 
     case 'topic-card': {
       const icon = content.icon || '🎯';
-      const iconImage = content.iconImage || '';
+      const iconImage = resolveEmailAssetUrl(content.iconImage);
       const title = content.title || 'Título do Tópico';
       const description = content.description || 'Descrição detalhada do tópico.';
       const dividerColor = content.dividerColor || '#ff6b00';
@@ -580,7 +600,7 @@ function renderBlock(block: EmailBlock, globalSettings: any): string {
 
     case 'schedule-box': {
       const icon = content.icon || '📅';
-      const iconImage = content.iconImage || '';
+      const iconImage = resolveEmailAssetUrl(content.iconImage);
       const badge = content.badge || 'DATAS & HORÁRIOS CONFIRMADOS';
       const title = content.title || 'Super Live com PH';
       const dates = content.dates || 'Dias 19 e 20 de Novembro';

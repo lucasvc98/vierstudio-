@@ -1516,6 +1516,7 @@ export const App: React.FC = () => {
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
           document={currentProject}
+          onUpdateDocument={handleSaveProject}
         />
       )}
 

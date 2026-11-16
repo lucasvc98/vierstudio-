@@ -1,28 +1,81 @@
-import React, { useState } from 'react';
-import { X, Copy, Download, Code2, Check, AlertTriangle, ShieldCheck, ExternalLink, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Copy, Download, Code2, Check, AlertTriangle, ShieldCheck, ExternalLink, Sparkles, Cloud } from 'lucide-react';
 import { EmailDocument } from '../../types/email';
 import { compileEmailHtml } from '../../utils/emailCompiler';
+import { hasBase64Images, cleanDocumentBase64Images } from '../../utils/cloudImageUploader';
 
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   document: EmailDocument;
+  onUpdateDocument?: (doc: EmailDocument) => void;
 }
 
-export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, document: doc }) => {
+export const ExportModal: React.FC<ExportModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  document: initialDoc,
+  onUpdateDocument 
+}) => {
+  const [activeDoc, setActiveDoc] = useState<EmailDocument>(initialDoc);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'platforms'>('code');
+  const [isConverting, setIsConverting] = useState(false);
+  const [conversionMessage, setConversionMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setActiveDoc(initialDoc);
+  }, [initialDoc]);
+
+  // Se houver imagens Base64, dispara automaticamente a conversão para CDN público
+  // para garantir que o Brevo e outras plataformas aceitem o template de primeira
+  useEffect(() => {
+    if (isOpen && hasBase64Images(activeDoc)) {
+      handleAutoConvert();
+    }
+  }, [isOpen]);
+
+  const handleAutoConvert = async () => {
+    setIsConverting(true);
+    try {
+      const { doc: cleanedDoc, replacedCount } = await cleanDocumentBase64Images(activeDoc);
+      if (replacedCount > 0) {
+        setActiveDoc(cleanedDoc);
+        if (onUpdateDocument) {
+          onUpdateDocument(cleanedDoc);
+        }
+        setConversionMessage(`✓ ${replacedCount} imagem(ns) hospedada(s) com sucesso na nuvem! 100% compatível com o Brevo.`);
+        setTimeout(() => setConversionMessage(null), 4000);
+      }
+    } catch (err) {
+      console.warn('Erro ao converter imagens automaticamente:', err);
+    } finally {
+      setIsConverting(false);
+    }
+  };
 
   if (!isOpen) return null;
 
-  const compiledHtml = compileEmailHtml(doc);
+  const compiledHtml = compileEmailHtml(activeDoc);
   const sizeBytes = new Blob([compiledHtml]).size;
   const sizeKb = (sizeBytes / 1024).toFixed(1);
   const isGmailSafe = sizeBytes < 102400; // 102KB limit
+  const containsBase64 = hasBase64Images(activeDoc);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(compiledHtml);
+      let htmlToCopy = compiledHtml;
+      if (containsBase64) {
+        setIsConverting(true);
+        const { doc: cleaned, replacedCount } = await cleanDocumentBase64Images(activeDoc);
+        if (replacedCount > 0) {
+          setActiveDoc(cleaned);
+          if (onUpdateDocument) onUpdateDocument(cleaned);
+          htmlToCopy = compileEmailHtml(cleaned);
+        }
+        setIsConverting(false);
+      }
+      await navigator.clipboard.writeText(htmlToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
@@ -30,9 +83,21 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, docum
     }
   };
 
-  const handleDownload = () => {
-    const filename = `${doc.name.toLowerCase().replace(/[^a-z0-9]/gi, '_') || 'email'}.html`;
-    const blob = new Blob([compiledHtml], { type: 'text/html;charset=utf-8' });
+  const handleDownload = async () => {
+    let docToDownload = activeDoc;
+    if (containsBase64) {
+      setIsConverting(true);
+      const { doc: cleaned, replacedCount } = await cleanDocumentBase64Images(activeDoc);
+      if (replacedCount > 0) {
+        setActiveDoc(cleaned);
+        if (onUpdateDocument) onUpdateDocument(cleaned);
+        docToDownload = cleaned;
+      }
+      setIsConverting(false);
+    }
+    const htmlString = compileEmailHtml(docToDownload);
+    const filename = `${docToDownload.name.toLowerCase().replace(/[^a-z0-9]/gi, '_') || 'email'}.html`;
+    const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = window.document.createElement('a');
     link.href = url;
@@ -117,6 +182,18 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, docum
             <div className="text-slate-500">
               VML Outlook: <span className="text-indigo-600 font-semibold">Ativado</span>
             </div>
+
+            <div>
+              {containsBase64 ? (
+                <span className="flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-semibold text-[11px] border border-amber-200">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Imagens Base64 detectadas
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-semibold text-[11px] border border-emerald-200">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" /> 100% Compatível com Brevo & Mailchimp
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-1 bg-white border border-slate-200 p-0.5 rounded-lg text-xs font-medium">
@@ -140,6 +217,42 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, docum
             </button>
           </div>
         </div>
+
+        {/* Warning Banner for Brevo / Base64 */}
+        {containsBase64 && (
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center justify-between text-xs text-amber-900 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <div>
+                <span className="font-bold">Aviso Brevo/Mailchimp:</span> O Brevo rejeita imagens em Base64. Clique ao lado para converter e hospedar na nuvem em alta velocidade.
+              </div>
+            </div>
+            <button
+              onClick={handleAutoConvert}
+              disabled={isConverting}
+              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+            >
+              {isConverting ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Hospedando Imagens...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Converter para URLs Públicas (Brevo)</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {conversionMessage && (
+          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2 flex items-center gap-2 text-xs text-emerald-800 font-semibold animate-in fade-in duration-200">
+            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{conversionMessage}</span>
+          </div>
+        )}
 
         {/* Tab Content */}
         <div className="flex-1 overflow-hidden p-6 bg-slate-950 text-slate-100 flex flex-col font-mono text-xs">

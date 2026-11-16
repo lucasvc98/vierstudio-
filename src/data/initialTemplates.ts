@@ -9,7 +9,7 @@ export const INITIAL_TEMPLATES: TemplateModel[] = [
     categoryLabel: 'Mercado Financeiro',
     description: 'Template oficial de alta conversão para o nicho de trading e mercado financeiro. Chamada exclusiva para o Grupo VIP e Super Live com o PH, recuperação de loss e 10 premiações.',
     badge: 'Super Live Exclusiva',
-    thumbnailUrl: '/templates/monetter/banner-superlive-ph.jpg',
+    thumbnailUrl: 'https://files.catbox.moe/tn263p.jpg',
     document: {
       id: 'doc-monetter-superlive-01',
       name: 'Monetter — Já teve prejuízo no trading? (Super Live com PH)',
@@ -93,7 +93,7 @@ export const INITIAL_TEMPLATES: TemplateModel[] = [
                   id: 'blk-monetter-hero-img',
                   type: 'image',
                   content: {
-                    url: '/templates/monetter/banner-superlive-ph.jpg',
+                    url: 'https://files.catbox.moe/tn263p.jpg',
                     alt: 'Já teve prejuízo no trading com essas corretoras? Não perca a Super Live com o PH nos dias 19 e 20/11',
                     link: 'https://chat.whatsapp.com/exemplo-grupo-vip-ph',
                     width: '100%'
@@ -406,7 +406,7 @@ export const INITIAL_TEMPLATES: TemplateModel[] = [
     categoryLabel: 'E-commerce',
     description: 'Template oficial AM Outlet: layout minimalista luxo, logo, banner Black Friday, copy de alta conversão, vitrine de produtos e caixa de urgência.',
     badge: 'Black Friday Oficial',
-    thumbnailUrl: '/templates/am-outlet/banner-black-friday.jpg',
+    thumbnailUrl: 'https://files.catbox.moe/a0gzd5.jpg',
     document: {
       id: 'doc-am-outlet-01',
       name: 'Black Friday AM Outlet — 5% em todo o site',
@@ -490,7 +490,7 @@ export const INITIAL_TEMPLATES: TemplateModel[] = [
                   id: 'blk-am-banner-img',
                   type: 'image',
                   content: {
-                    url: '/templates/am-outlet/banner-black-friday.jpg',
+                    url: 'https://files.catbox.moe/a0gzd5.jpg',
                     alt: 'Black Friday AM Outlet — todo o site com 5% de desconto',
                     link: 'https://amoutlet.com.br/?utm_source=email&utm_medium=email&utm_campaign=black_friday_5_off&utm_content=banner',
                     width: '100%'

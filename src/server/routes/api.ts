@@ -8,6 +8,7 @@ import { generateAiPageDocument } from '../aiPageGenerator';
 import { generateAiBoardContent } from '../aiBoardGenerator';
 import { AiPageBriefingRequest } from '../../types/page';
 import { AiBoardGenerateRequest } from '../../types/board';
+import { uploadBase64ToCdn } from '../imageUploader';
 
 export const apiRouter = Router();
 
@@ -153,6 +154,110 @@ apiRouter.post('/media/folders', (req, res) => {
 apiRouter.delete('/media/:id', (req, res) => {
   const deleted = storage.deleteMediaAsset(req.params.id);
   res.json({ success: deleted });
+});
+
+// ===================== UPLOAD DE IMAGEM & COMPATIBILIDADE BREVO/EMAIL =====================
+apiRouter.post('/upload-image', async (req, res) => {
+  try {
+    const { base64, filename } = req.body;
+    if (!base64 || typeof base64 !== 'string' || !base64.startsWith('data:image/')) {
+      return res.status(400).json({ success: false, message: 'Nenhuma imagem base64 válida fornecida' });
+    }
+
+    const result = await uploadBase64ToCdn(base64, filename || 'banner.jpg');
+    res.json({
+      success: true,
+      url: result.url,
+      localUrl: result.localUrl,
+      sizeBytes: result.sizeBytes,
+      filename: result.filename
+    });
+  } catch (err: any) {
+    console.error('Erro em /api/upload-image:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+apiRouter.post('/clean-base64-images', async (req, res) => {
+  try {
+    const doc = req.body;
+    if (!doc || !doc.rows || !Array.isArray(doc.rows)) {
+      return res.status(400).json({ success: false, message: 'Documento inválido' });
+    }
+
+    let replacedCount = 0;
+    const clonedDoc = JSON.parse(JSON.stringify(doc));
+
+    // Scan all rows, columns, blocks and globalSettings
+    for (const row of clonedDoc.rows) {
+      if (row.columns && Array.isArray(row.columns)) {
+        for (const col of row.columns) {
+          if (col.blocks && Array.isArray(col.blocks)) {
+            for (const block of col.blocks) {
+              if (block && block.content) {
+                // Check all content properties for data:image
+                for (const key of Object.keys(block.content)) {
+                  const val = block.content[key];
+                  if (typeof val === 'string' && val.startsWith('data:image/')) {
+                    try {
+                      const resUpload = await uploadBase64ToCdn(val, `${block.type}-${key}.jpg`);
+                      block.content[key] = resUpload.url;
+                      replacedCount++;
+                    } catch (e) {
+                      console.warn(`Falha ao converter base64 no bloco ${block.id}:`, e);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Check thumbnailData
+    if (typeof clonedDoc.thumbnailData === 'string' && clonedDoc.thumbnailData.startsWith('data:image/')) {
+      try {
+        const resUpload = await uploadBase64ToCdn(clonedDoc.thumbnailData, 'thumbnail.jpg');
+        clonedDoc.thumbnailData = resUpload.url;
+        replacedCount++;
+      } catch (e) {}
+    }
+
+    // Check globalSettings bodyBgImage / contentBgImage
+    if (clonedDoc.globalSettings) {
+      if (typeof clonedDoc.globalSettings.bodyBgImage === 'string' && clonedDoc.globalSettings.bodyBgImage.startsWith('data:image/')) {
+        try {
+          const resUpload = await uploadBase64ToCdn(clonedDoc.globalSettings.bodyBgImage, 'body-bg.jpg');
+          clonedDoc.globalSettings.bodyBgImage = resUpload.url;
+          replacedCount++;
+        } catch (e) {}
+      }
+      if (typeof clonedDoc.globalSettings.contentBgImage === 'string' && clonedDoc.globalSettings.contentBgImage.startsWith('data:image/')) {
+        try {
+          const resUpload = await uploadBase64ToCdn(clonedDoc.globalSettings.contentBgImage, 'content-bg.jpg');
+          clonedDoc.globalSettings.contentBgImage = resUpload.url;
+          replacedCount++;
+        } catch (e) {}
+      }
+    }
+
+    // Save cleaned project to storage if it has an id
+    if (clonedDoc.id && replacedCount > 0) {
+      try {
+        storage.saveProject(clonedDoc);
+      } catch (e) {}
+    }
+
+    res.json({
+      success: true,
+      doc: clonedDoc,
+      replacedCount
+    });
+  } catch (err: any) {
+    console.error('Erro em /api/clean-base64-images:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // ===================== EXPORTAÇÃO & COMPILAÇÃO HTML =====================

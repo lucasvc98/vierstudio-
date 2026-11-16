@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { EmailBlock, EmailRow, EmailColumn, EmailDocument, DeviceVisibility } from '../../types/email';
 import { compressImageFile } from '../../utils/imageOptimizer';
+import { uploadImageFileToCloud } from '../../utils/cloudImageUploader';
 
 interface DropTargetState {
   type: 'between-rows' | 'between-blocks' | 'empty-column';
@@ -733,12 +734,12 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       if (!files || files.length === 0) return;
                       const file = files[0];
                       try {
-                        const optimized = await compressImageFile(file, 1200, 0.85);
+                        const cloudUrl = await uploadImageFileToCloud(file);
                         onUpdateBlock({
                           ...block,
                           content: {
                             ...block.content,
-                            url: optimized.dataUrl,
+                            url: cloudUrl,
                             alt: file.name.replace(/\.[^/.]+$/, '')
                           }
                         });

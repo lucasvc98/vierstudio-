@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { EmailBlock, EmailRow, EmailColumn, GlobalEmailSettings, MediaAsset } from '../../types/email';
 import { compressImageFile } from '../../utils/imageOptimizer';
+import { uploadImageFileToCloud } from '../../utils/cloudImageUploader';
 
 interface RightSidebarProps {
   selectedBlock: EmailBlock | null;
@@ -1102,23 +1103,22 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                     if (!files || files.length === 0) return;
                     const file = files[0];
                     try {
-                      const optimized = await compressImageFile(file, 1200, 0.85);
+                      // Otimiza e faz upload para o CDN em alta velocidade (gera URL padrão https:// compatível com Brevo)
+                      const cloudUrl = await uploadImageFileToCloud(file);
                       updateContent({ 
-                        url: optimized.dataUrl, 
+                        url: cloudUrl, 
                         alt: block.content.alt || file.name.replace(/\.[^/.]+$/, '') 
                       });
 
-                      // Salva na galeria do navegador e sincroniza em background
+                      // Salva na galeria com a URL pública permanente
                       const newAsset: MediaAsset = {
                         id: `media-${Date.now()}`,
                         name: file.name,
                         folder: 'Banners',
-                        url: optimized.dataUrl,
-                        sizeBytes: optimized.sizeBytes,
+                        url: cloudUrl,
+                        sizeBytes: file.size,
                         mimeType: file.type || 'image/jpeg',
                         altText: file.name.replace(/\.[^/.]+$/, ''),
-                        width: optimized.width,
-                        height: optimized.height,
                         createdAt: new Date().toISOString()
                       };
                       try {

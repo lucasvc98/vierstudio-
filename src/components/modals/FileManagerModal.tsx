@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Upload, Folder, Search, Image as ImageIcon, Trash2, Check, FolderPlus, Grid, List } from 'lucide-react';
 import { MediaAsset } from '../../types/email';
 import { compressImageFile } from '../../utils/imageOptimizer';
+import { uploadImageFileToCloud } from '../../utils/cloudImageUploader';
 import { INITIAL_MEDIA_ASSETS } from '../../data/initialMedia';
 
 interface FileManagerModalProps {
@@ -93,19 +94,17 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
     const file = files[0];
 
     try {
-      // Otimização e compressão inteligente: reduz de vários MBs para ~150KB (1200px máx)
-      const optimized = await compressImageFile(file, 1200, 0.85);
+      // Otimiza e faz upload para o CDN em alta velocidade (gera URL padrão https:// compatível com Brevo)
+      const cloudUrl = await uploadImageFileToCloud(file);
 
       const newAsset: MediaAsset = {
         id: `media-${Date.now()}`,
         name: file.name,
         folder: selectedFolder === 'Todos' ? 'Banners' : selectedFolder,
-        url: optimized.dataUrl,
-        sizeBytes: optimized.sizeBytes,
+        url: cloudUrl,
+        sizeBytes: file.size,
         mimeType: file.type || 'image/jpeg',
         altText: file.name.replace(/\.[^/.]+$/, ''),
-        width: optimized.width,
-        height: optimized.height,
         createdAt: new Date().toISOString()
       };
 
