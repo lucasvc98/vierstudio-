@@ -21,7 +21,7 @@ import { SaveBlockModal } from './components/modals/SaveBlockModal';
 import { ImportHtmlModal } from './components/modals/ImportHtmlModal';
 import { LeadSubmissionsModal } from './components/modals/LeadSubmissionsModal';
 import { AiPageGeneratorModal } from './components/modals/AiPageGeneratorModal';
-import { flushDomEditsToDoc } from './utils/domSync';
+import { flushDomEditsToDoc, extractEmailMainBanner } from './utils/domSync';
 
 export const App: React.FC = () => {
   // Global Product Switcher ('emails' | 'pages' | 'boards')
@@ -100,6 +100,12 @@ export const App: React.FC = () => {
 
   // Synchronize a project into React state and localStorage immediately
   const syncToLocalProjects = (docToSave: EmailDocument) => {
+    // Ensure docToSave reflects the primary banner of the email
+    const banner = extractEmailMainBanner(docToSave);
+    if (banner) {
+      docToSave.thumbnailData = banner;
+    }
+
     setProjects(prev => {
       const idx = prev.findIndex(p => p.id === docToSave.id);
       const next = idx >= 0
@@ -134,6 +140,12 @@ export const App: React.FC = () => {
     const docToSave = flushDomEditsToDoc(baseDoc) || baseDoc;
     docToSave.updatedAt = new Date().toISOString();
 
+    // 2. Synchronize main banner to thumbnailData
+    const banner = extractEmailMainBanner(docToSave);
+    if (banner) {
+      docToSave.thumbnailData = banner;
+    }
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
@@ -143,10 +155,10 @@ export const App: React.FC = () => {
     currentProjectRef.current = docToSave;
     setCurrentProject(docToSave);
 
-    // 2. Synchronize to localStorage immediately
+    // 3. Synchronize to localStorage immediately
     syncToLocalProjects(docToSave);
 
-    // 3. Persist to server database
+    // 4. Persist to server database
     try {
       const res = await fetch('/api/projects', {
         method: 'POST',
@@ -172,6 +184,8 @@ export const App: React.FC = () => {
     const templateName = prompt('Nome do novo template:', `${flushed.name} (Template)`);
     if (!templateName || !templateName.trim()) return;
 
+    const banner = extractEmailMainBanner(flushed);
+
     const newTemplateDoc: EmailDocument = {
       ...JSON.parse(JSON.stringify(flushed)),
       id: `proj-tmpl-${Date.now()}`,
@@ -179,7 +193,8 @@ export const App: React.FC = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: 'draft',
-      folder: 'Meus Templates'
+      folder: 'Meus Templates',
+      thumbnailData: banner || flushed.thumbnailData
     };
 
     await handleSaveProject(newTemplateDoc, true);
@@ -243,7 +258,11 @@ export const App: React.FC = () => {
       if (rawLocal) {
         const parsed = JSON.parse(rawLocal);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setProjects(parsed);
+          const synced = parsed.map((p: EmailDocument) => {
+            const banner = extractEmailMainBanner(p);
+            return banner ? { ...p, thumbnailData: banner } : p;
+          });
+          setProjects(synced);
         }
       }
     } catch (e) {
@@ -294,7 +313,10 @@ export const App: React.FC = () => {
               }
             }
           });
-          const finalList = Array.from(mergedMap.values());
+          const finalList = Array.from(mergedMap.values()).map(p => {
+            const banner = extractEmailMainBanner(p);
+            return banner ? { ...p, thumbnailData: banner } : p;
+          });
           try {
             localStorage.setItem('vierstudio_email_projects', JSON.stringify(finalList));
           } catch (err) {
@@ -356,6 +378,11 @@ export const App: React.FC = () => {
       return;
     }
 
+    const banner = extractEmailMainBanner(newDoc);
+    if (banner) {
+      newDoc.thumbnailData = banner;
+    }
+
     currentProjectRef.current = newDoc;
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIndex + 1);
@@ -377,6 +404,10 @@ export const App: React.FC = () => {
     saveTimeoutRef.current = setTimeout(async () => {
       const latest = flushDomEditsToDoc(currentProjectRef.current || docToSave) || docToSave;
       latest.updatedAt = new Date().toISOString();
+      const banner = extractEmailMainBanner(latest);
+      if (banner) {
+        latest.thumbnailData = banner;
+      }
       currentProjectRef.current = latest;
       syncToLocalProjects(latest);
       try {

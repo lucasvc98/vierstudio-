@@ -9,6 +9,7 @@ import {
 import { EmailDocument, TemplateModel, UserProfile } from '../../types/email';
 import { INITIAL_TEMPLATES } from '../../data/initialTemplates';
 import { MoveToFolderModal } from '../modals/MoveToFolderModal';
+import { extractEmailMainBanner } from '../../utils/domSync';
 
 interface DashboardViewProps {
   projects: EmailDocument[];
@@ -67,17 +68,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   });
 
   const getProjectThumbnail = (proj: EmailDocument): string | undefined => {
-    if (proj.thumbnailData) return proj.thumbnailData;
-    for (const r of proj.rows || []) {
-      for (const c of r.columns || []) {
-        for (const b of c.blocks || []) {
-          if (b.type === 'image' && b.content?.url) {
-            return b.content.url;
-          }
-        }
-      }
-    }
-    return undefined;
+    return extractEmailMainBanner(proj);
   };
 
   const findEditedProjectForTemplate = (tmpl: TemplateModel): EmailDocument | undefined => {
@@ -114,7 +105,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: 'draft',
-      thumbnailData: existing?.thumbnailData || getProjectThumbnail(sourceDoc) || tmpl.thumbnailUrl,
+      thumbnailData: getProjectThumbnail(sourceDoc) || tmpl.thumbnailUrl,
       folder: 'Campanhas 2026'
     };
     if (onSaveNewProject) {
@@ -543,9 +534,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         onClick={() => onOpenProject(project)}
                         className="relative h-48 bg-slate-100 cursor-pointer overflow-hidden rounded-t-2xl border-b border-slate-100"
                       >
-                        {(project.thumbnailData || getProjectThumbnail(project)) ? (
+                        {getProjectThumbnail(project) ? (
                           <img 
-                            src={project.thumbnailData || getProjectThumbnail(project)} 
+                            src={getProjectThumbnail(project)} 
                             alt={project.name} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -704,7 +695,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {filteredReadyTemplates.map(tmpl => {
                 const isMenuOpen = activeMenuId === tmpl.id;
                 const editedProj = findEditedProjectForTemplate(tmpl);
-                const displayThumbnail = editedProj?.thumbnailData || (editedProj ? getProjectThumbnail(editedProj) : undefined) || tmpl.thumbnailUrl;
+                const displayThumbnail = (editedProj ? getProjectThumbnail(editedProj) : undefined) || tmpl.thumbnailUrl;
                 const displayName = editedProj?.name || tmpl.name;
 
                 return (
