@@ -37,6 +37,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   const handleAutoConvert = async () => {
     setIsConverting(true);
+    setConversionMessage('Hospedando imagens na nuvem em alta velocidade...');
     try {
       const { doc: cleanedDoc, replacedCount } = await cleanDocumentBase64Images(activeDoc);
       if (replacedCount > 0) {
@@ -44,11 +45,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         if (onUpdateDocument) {
           onUpdateDocument(cleanedDoc);
         }
-        setConversionMessage(`✓ ${replacedCount} imagem(ns) hospedada(s) com sucesso na nuvem! 100% compatível com o Brevo.`);
-        setTimeout(() => setConversionMessage(null), 4000);
+        setConversionMessage(`✓ Sucesso! ${replacedCount} imagem(ns) hospedada(s) com sucesso na nuvem! 100% compatível com o Brevo.`);
+        setTimeout(() => setConversionMessage(null), 5000);
+      } else {
+        setConversionMessage('✓ Verificação concluída. Nenhuma imagem Base64 restante.');
+        setTimeout(() => setConversionMessage(null), 3000);
       }
     } catch (err) {
       console.warn('Erro ao converter imagens automaticamente:', err);
+      setConversionMessage('Falha ao conectar com o serviço de nuvem. Tente novamente.');
+      setTimeout(() => setConversionMessage(null), 4000);
     } finally {
       setIsConverting(false);
     }
@@ -248,8 +254,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         )}
 
         {conversionMessage && (
-          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2 flex items-center gap-2 text-xs text-emerald-800 font-semibold animate-in fade-in duration-200">
-            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className={`border-b px-6 py-2.5 flex items-center gap-2 text-xs font-semibold animate-in fade-in duration-200 ${
+            isConverting 
+              ? 'bg-indigo-50 border-indigo-200 text-indigo-800' 
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}>
+            {isConverting ? (
+              <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0" />
+            ) : (
+              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            )}
             <span>{conversionMessage}</span>
           </div>
         )}

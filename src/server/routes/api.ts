@@ -190,6 +190,26 @@ apiRouter.post('/clean-base64-images', async (req, res) => {
 
     // Scan all rows, columns, blocks and globalSettings
     for (const row of clonedDoc.rows) {
+      if (row.style?.backgroundImage && typeof row.style.backgroundImage === 'string') {
+        const bg = row.style.backgroundImage;
+        if (bg.startsWith('data:image/')) {
+          try {
+            const resUpload = await uploadBase64ToCdn(bg, 'row-bg.jpg');
+            row.style.backgroundImage = resUpload.url;
+            replacedCount++;
+          } catch (e) {}
+        } else if (bg.includes('data:image/')) {
+          const match = bg.match(/data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/);
+          if (match) {
+            try {
+              const resUpload = await uploadBase64ToCdn(match[0], 'row-bg.jpg');
+              row.style.backgroundImage = bg.replace(match[0], resUpload.url);
+              replacedCount++;
+            } catch (e) {}
+          }
+        }
+      }
+
       if (row.columns && Array.isArray(row.columns)) {
         for (const col of row.columns) {
           if (col.blocks && Array.isArray(col.blocks)) {

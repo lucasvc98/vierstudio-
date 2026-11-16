@@ -26,14 +26,17 @@ export async function uploadBase64ToCdn(
   base64DataUri: string,
   suggestedFilename = 'image.jpg'
 ): Promise<UploadResult> {
-  const match = base64DataUri.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
-  if (!match) {
+  const commaIdx = base64DataUri.indexOf(',');
+  if (commaIdx === -1 || !base64DataUri.startsWith('data:image/')) {
     throw new Error('Formato Base64 de imagem inválido');
   }
 
-  const rawExt = match[1].toLowerCase();
+  const header = base64DataUri.slice(0, commaIdx);
+  const typeMatch = header.match(/^data:image\/([a-zA-Z0-9+.-]+);base64/i);
+  const rawExt = typeMatch ? typeMatch[1].toLowerCase() : 'jpeg';
   const ext = rawExt === 'jpeg' ? 'jpg' : rawExt === 'svg+xml' ? 'svg' : rawExt;
-  const base64Data = match[2];
+
+  const base64Data = base64DataUri.slice(commaIdx + 1).replace(/\s+/g, '');
   const buffer = Buffer.from(base64Data, 'base64');
   const sizeBytes = buffer.length;
 

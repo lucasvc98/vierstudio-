@@ -153,10 +153,20 @@ export async function cleanDocumentBase64Images(
       } catch {}
 
       try {
-        const match = b64.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
-        if (!match) return b64;
-        const rawExt = match[1].toLowerCase() === 'jpeg' ? 'jpg' : match[1].toLowerCase();
-        const blob = await fetch(b64).then(r => r.blob());
+        const commaIdx = b64.indexOf(',');
+        if (commaIdx === -1 || !b64.startsWith('data:image/')) return b64;
+        const header = b64.slice(0, commaIdx);
+        const typeMatch = header.match(/^data:image\/([a-zA-Z0-9+.-]+);base64/i);
+        const rawExt = typeMatch ? (typeMatch[1].toLowerCase() === 'jpeg' ? 'jpg' : typeMatch[1].toLowerCase()) : 'jpg';
+        const cleanB64 = b64.slice(commaIdx + 1).replace(/\s+/g, '');
+        const byteCharacters = atob(cleanB64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: `image/${rawExt}` });
+
         const fd = new FormData();
         fd.append('reqtype', 'fileupload');
         fd.append('fileToUpload', blob, `${name}.${rawExt}`);
