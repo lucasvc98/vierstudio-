@@ -1,0 +1,40 @@
+{
+  "doc": {
+    "id": "test-migracao-base64",
+    "name": "Template Antigo com Base64",
+    "rows": [
+      {
+        "id": "r1",
+        "layout": "1-col",
+        "style": {},
+        "columns": [
+          {
+            "id": "c1",
+            "widthPercentage": 100,
+            "style": {},
+            "blocks": [
+              {
+                "id": "b1",
+                "type": "image",
+                "content": {
+                  "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                  "alt": "Imagem Base64 Antiga"
+                },
+                "style": {
+                  "textAlign": "center"
+                },
+                "deviceVisibility": "all"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "globalSettings": {
+      "containerWidth": 600,
+      "bodyBgColor": "#f4f5f8"
+    }
+  },
+  "reason": "base64_migration",
+  "timestamp": "2026-11-16T16:18:07.128Z"
+}

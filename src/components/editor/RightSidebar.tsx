@@ -3,7 +3,8 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   Bold, Italic, Underline, Link2, Image as ImageIcon, Sliders, 
   Smartphone, Monitor, Eye, Sparkles, FolderOpen, Tag,
-  LayoutGrid, Plus, Minus, Trash2, Copy, Upload, AlertTriangle, Check
+  LayoutGrid, Plus, Minus, Trash2, Copy, Upload, AlertTriangle, Check,
+  ExternalLink, Loader2
 } from 'lucide-react';
 import { EmailBlock, EmailRow, EmailColumn, GlobalEmailSettings, MediaAsset } from '../../types/email';
 import { compressImageFile } from '../../utils/imageOptimizer';
@@ -16,6 +17,7 @@ interface RightSidebarProps {
   onUpdateRow: (updated: EmailRow) => void;
   onOpenFileManager: () => void;
   onDeselectBlock?: () => void;
+  onDeleteBlock?: (blockId: string) => void;
   globalSettings: GlobalEmailSettings;
 }
 
@@ -26,10 +28,13 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   onUpdateRow,
   onOpenFileManager,
   onDeselectBlock,
+  onDeleteBlock,
   globalSettings
 }) => {
   const [isConvertingImage, setIsConvertingImage] = React.useState(false);
   const [convertedNotice, setConvertedNotice] = React.useState(false);
+  const [isUploadingImage, setIsUploadingImage] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
 
   // Handler to change column/window quantity dynamically
   const handleChangeColumnCount = (targetCount: number) => {
@@ -1127,72 +1132,44 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         {/* ================= IMAGE & LOGO CONFIG ================= */}
         {(block.type === 'image' || block.type === 'logo') && (
           <>
-            {/* Botão de Upload Direto do Computador */}
-            <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
-              <label className="block text-[11px] font-bold text-indigo-900">
-                {block.type === 'image' ? 'Subir Novo Banner ou Imagem' : 'Subir Logotipo'}
-              </label>
-              
-              <label className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors">
-                <Upload className="w-4 h-4" />
-                <span>Escolher do Computador (Upload)</span>
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const files = e.target.files;
-                    if (!files || files.length === 0) return;
-                    const file = files[0];
-                    try {
-                      // Otimiza e faz upload para o CDN em alta velocidade (gera URL padrão https:// compatível com Brevo)
-                      const cloudUrl = await uploadImageFileToCloud(file);
-                      updateContent({ 
-                        url: cloudUrl, 
-                        alt: block.content.alt || file.name.replace(/\.[^/.]+$/, '') 
-                      });
+            {/* Visual Preview & Status */}
+            {block.content.url && (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                  <span>Prévia da Imagem</span>
+                  {block.content.url.startsWith('https://') && (
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+                      <Check className="w-3 h-3 text-emerald-600" /> Hospedada na Nuvem
+                    </span>
+                  )}
+                </div>
+                <div className="relative rounded-lg overflow-hidden border border-slate-200 bg-white aspect-video flex items-center justify-center">
+                  <img 
+                    src={block.content.url} 
+                    alt={block.content.alt || ''} 
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+              </div>
+            )}
 
-                      // Salva na galeria com a URL pública permanente
-                      const newAsset: MediaAsset = {
-                        id: `media-${Date.now()}`,
-                        name: file.name,
-                        folder: 'Banners',
-                        url: cloudUrl,
-                        sizeBytes: file.size,
-                        mimeType: file.type || 'image/jpeg',
-                        altText: file.name.replace(/\.[^/.]+$/, ''),
-                        createdAt: new Date().toISOString()
-                      };
-                      try {
-                        const raw = localStorage.getItem('vierstudio_custom_media');
-                        const custom = raw ? JSON.parse(raw) : [];
-                        localStorage.setItem('vierstudio_custom_media', JSON.stringify([newAsset, ...custom].slice(0, 30)));
-                        fetch('/api/media', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(newAsset)
-                        }).catch(() => {});
-                      } catch {}
-                    } catch (err) {
-                      console.error('Falha no upload direto da imagem', err);
-                      alert('Não foi possível processar a imagem. Tente outro arquivo.');
-                    } finally {
-                      e.target.value = '';
-                    }
-                  }}
-                />
-              </label>
+            {/* Status: Enviando Imagem */}
+            {isUploadingImage && (
+              <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-2.5 text-xs font-bold text-indigo-900 animate-in fade-in">
+                <Loader2 className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
+                <span>Enviando e hospedando imagem na nuvem...</span>
+              </div>
+            )}
 
-              <button
-                onClick={onOpenFileManager}
-                className="w-full py-2 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <FolderOpen className="w-3.5 h-3.5 text-slate-500" />
-                <span>Abrir Galeria de Imagens</span>
-              </button>
-            </div>
+            {/* Status: Erro no Upload */}
+            {uploadError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-bold text-rose-800 animate-in fade-in">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{uploadError}</span>
+              </div>
+            )}
 
-            {/* Aviso se a imagem atual for Base64 com botão de 1 clique para converter */}
+            {/* Status: Base64 Detectado com Conversor de 1 Clique */}
             {block.content.url && typeof block.content.url === 'string' && block.content.url.startsWith('data:image/') && (
               <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl space-y-2 animate-in fade-in duration-200">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
@@ -1232,13 +1209,13 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                 >
                   {isConvertingImage ? (
                     <>
-                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span>Convertendo e Hospedando...</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Remover Base64 (Hospedar na Nuvem)</span>
+                      <span>Hospedar na Nuvem (Remover Base64)</span>
                     </>
                   )}
                 </button>
@@ -1252,8 +1229,74 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
               </div>
             )}
 
+            {/* Botões de Ação para Imagem */}
+            <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+              <label className="block text-[11px] font-bold text-indigo-900">
+                {block.type === 'image' ? 'Substituir Imagem / Banner' : 'Substituir Logotipo'}
+              </label>
+              
+              <label className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors">
+                <Upload className="w-4 h-4" />
+                <span>Escolher do Computador (Upload)</span>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files || files.length === 0) return;
+                    const file = files[0];
+                    setIsUploadingImage(true);
+                    setUploadError(null);
+                    try {
+                      const cloudUrl = await uploadImageFileToCloud(file);
+                      updateContent({ 
+                        url: cloudUrl, 
+                        alt: block.content.alt || file.name.replace(/\.[^/.]+$/, '') 
+                      });
+
+                      const newAsset: MediaAsset = {
+                        id: `media-${Date.now()}`,
+                        name: file.name,
+                        folder: 'Banners',
+                        url: cloudUrl,
+                        sizeBytes: file.size,
+                        mimeType: file.type || 'image/jpeg',
+                        altText: file.name.replace(/\.[^/.]+$/, ''),
+                        createdAt: new Date().toISOString()
+                      };
+                      try {
+                        const raw = localStorage.getItem('vierstudio_custom_media');
+                        const custom = raw ? JSON.parse(raw) : [];
+                        localStorage.setItem('vierstudio_custom_media', JSON.stringify([newAsset, ...custom].slice(0, 30)));
+                        fetch('/api/media', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(newAsset)
+                        }).catch(() => {});
+                      } catch {}
+                    } catch (err: any) {
+                      console.error('Falha no upload direto da imagem', err);
+                      setUploadError('Não foi possível processar a imagem. Verifique o formato e tente novamente.');
+                    } finally {
+                      setIsUploadingImage(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </label>
+
+              <button
+                onClick={onOpenFileManager}
+                className="w-full py-2 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+                <span>Escolher da Biblioteca de Mídia</span>
+              </button>
+            </div>
+
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Ou cole uma URL Direta</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Ou cole uma URL Direta (HTTPS)</label>
               <input
                 type="text"
                 value={block.content.url || ''}
@@ -1275,27 +1318,74 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Link ao Clicar (Opcional)</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Link ao Clicar (URL de Destino)</label>
               <input
                 type="text"
-                placeholder="https://..."
+                placeholder="https://sua-pagina.com..."
                 value={block.content.link || ''}
                 onChange={e => updateContent({ link: e.target.value })}
                 className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
               />
             </div>
 
+            {/* Largura da Imagem */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Largura</label>
+              <div className="flex justify-between items-center text-[11px] font-semibold text-slate-700 mb-1">
+                <span>Largura da Imagem</span>
+                <span className="font-mono text-indigo-600">{block.content.width || '100%'}</span>
+              </div>
+              <div className="flex gap-1.5 mb-1.5">
+                {['100%', '80%', '50%', '300px'].map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => updateContent({ width: preset })}
+                    className={`flex-1 py-1 text-xs rounded border transition-colors ${
+                      (block.content.width || '100%') === preset
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-bold'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
               <input
                 type="text"
                 value={block.content.width || '100%'}
                 onChange={e => updateContent({ width: e.target.value })}
                 placeholder="Ex: 100%, 300px, 140"
-                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none"
+                className="w-full text-xs p-1.5 border border-slate-200 rounded-lg focus:outline-none"
               />
             </div>
 
+            {/* Alinhamento */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Alinhamento</label>
+              <div className="flex bg-slate-100 p-1 rounded-lg gap-1 border border-slate-200">
+                {[
+                  { id: 'left', icon: AlignLeft, label: 'Esquerda' },
+                  { id: 'center', icon: AlignCenter, label: 'Centro' },
+                  { id: 'right', icon: AlignRight, label: 'Direita' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => updateStyle({ textAlign: item.id as any })}
+                    className={`flex-1 py-1.5 flex items-center justify-center gap-1 text-xs font-semibold rounded-md transition-colors ${
+                      (block.style.textAlign || 'center') === item.id
+                        ? 'bg-white text-indigo-600 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <item.icon className="w-3.5 h-3.5" />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Arredondamento das Bordas */}
             <div>
               <div className="flex justify-between items-center text-[11px] font-semibold text-slate-700 mb-1">
                 <span>Arredondamento das Bordas</span>
@@ -1310,6 +1400,20 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                 className="w-full accent-indigo-600 cursor-pointer"
               />
             </div>
+
+            {/* Botão de Excluir Bloco de Imagem */}
+            {onDeleteBlock && (
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => onDeleteBlock(block.id)}
+                  className="w-full py-2 px-3 border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remover Imagem do Template</span>
+                </button>
+              </div>
+            )}
           </>
         )}
 

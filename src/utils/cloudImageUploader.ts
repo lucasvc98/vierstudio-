@@ -1,6 +1,85 @@
 import { EmailDocument } from '../types/email';
 import { compressImageFile } from './imageOptimizer';
 
+export interface EmailExportAudit {
+  canExport: boolean;
+  base64Count: number;
+  blobCount: number;
+  localPathCount: number;
+  unhostedCount: number;
+  issues: string[];
+}
+
+/**
+ * Audits an EmailDocument before HTML export to ensure 100% Brevo and Mailchimp compatibility.
+ * Rejects Base64 inline images, temporary blob URLs, and local/relative links.
+ */
+export function auditEmailForExport(doc?: EmailDocument | null): EmailExportAudit {
+  const issues: string[] = [];
+  let base64Count = 0;
+  let blobCount = 0;
+  let localPathCount = 0;
+  let unhostedCount = 0;
+
+  if (!doc) {
+    return { canExport: false, base64Count: 0, blobCount: 0, localPathCount: 0, unhostedCount: 0, issues: ['Documento não encontrado'] };
+  }
+
+  const checkUrl = (url: string | undefined | null, locationName: string) => {
+    if (!url || typeof url !== 'string' || !url.trim()) return;
+    const val = url.trim();
+    if (val.startsWith('data:image/') || val.includes('data:image/')) {
+      base64Count++;
+      issues.push(`Imagem em Base64 em ${locationName}`);
+    } else if (val.startsWith('blob:')) {
+      blobCount++;
+      issues.push(`URL temporária Blob em ${locationName}`);
+    } else if (val.startsWith('http://localhost') || val.startsWith('http://127.0.0.1') || val.startsWith('file://')) {
+      localPathCount++;
+      issues.push(`URL local em ${locationName}`);
+    }
+  };
+
+  if (doc.rows && Array.isArray(doc.rows)) {
+    doc.rows.forEach((r, ri) => {
+      if (r.style?.backgroundImage) checkUrl(r.style.backgroundImage, `Fundo da Linha ${ri + 1}`);
+      if (r.columns && Array.isArray(r.columns)) {
+        r.columns.forEach((c) => {
+          if (c.blocks && Array.isArray(c.blocks)) {
+            c.blocks.forEach((b) => {
+              if (b.type === 'image' || b.type === 'logo') {
+                if (!b.content?.url) {
+                  unhostedCount++;
+                  issues.push(`Imagem sem endereço no bloco ${b.type}`);
+                } else {
+                  checkUrl(b.content.url, `Bloco ${b.type} (${b.content.alt || 'Sem descrição'})`);
+                }
+              }
+              if (b.type === 'hero' && b.content?.imageUrl) {
+                checkUrl(b.content.imageUrl, `Banner Hero`);
+              }
+              if ((b.type === 'product' || b.type === 'image-text') && b.content?.imageUrl) {
+                checkUrl(b.content.imageUrl, `Card de Produto`);
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  const canExport = base64Count === 0 && blobCount === 0 && localPathCount === 0;
+
+  return {
+    canExport,
+    base64Count,
+    blobCount,
+    localPathCount,
+    unhostedCount,
+    issues
+  };
+}
+
 /**
  * Checks if an EmailDocument contains any base64 encoded images.
  */

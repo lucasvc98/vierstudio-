@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Folder, Search, Image as ImageIcon, Trash2, Check, FolderPlus, Grid, List } from 'lucide-react';
+import { X, Upload, Folder, Search, Image as ImageIcon, Trash2, Check, FolderPlus, Grid, List, Link2, ExternalLink } from 'lucide-react';
 import { MediaAsset } from '../../types/email';
 import { compressImageFile } from '../../utils/imageOptimizer';
 import { uploadImageFileToCloud } from '../../utils/cloudImageUploader';
@@ -25,6 +25,9 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isInsertingUrl, setIsInsertingUrl] = useState(false);
+  const [directUrlInput, setDirectUrlInput] = useState('');
+  const [directUrlName, setDirectUrlName] = useState('');
 
   const getStoredCustomAssets = (): MediaAsset[] => {
     try {
@@ -132,6 +135,41 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
     }
   };
 
+  const handleInsertByUrl = async () => {
+    const url = directUrlInput.trim();
+    if (!url) return;
+    if (!url.startsWith('https://') && !url.startsWith('http://')) {
+      alert('Por favor, informe uma URL válida iniciando com HTTPS.');
+      return;
+    }
+    const name = directUrlName.trim() || url.split('/').pop()?.split('?')[0] || 'imagem-web.jpg';
+    const newAsset: MediaAsset = {
+      id: `media-url-${Date.now()}`,
+      name,
+      folder: selectedFolder === 'Todos' ? 'Geral' : selectedFolder,
+      url,
+      sizeBytes: 0,
+      mimeType: 'image/jpeg',
+      altText: name.replace(/\.[^/.]+$/, ''),
+      createdAt: new Date().toISOString()
+    };
+
+    setAssets(prev => [newAsset, ...prev]);
+    setSelectedAsset(newAsset);
+    saveStoredCustomAssets(newAsset);
+    setDirectUrlInput('');
+    setDirectUrlName('');
+    setIsInsertingUrl(false);
+
+    try {
+      await fetch('/api/media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAsset)
+      });
+    } catch {}
+  };
+
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
     try {
@@ -200,7 +238,7 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer shadow-xs transition-colors">
               <Upload className="w-4 h-4" />
-              <span>{isUploading ? 'Enviando...' : 'Fazer Upload'}</span>
+              <span>{isUploading ? 'Enviando...' : 'Enviar Imagem'}</span>
               <input 
                 type="file" 
                 accept="image/png, image/jpeg, image/webp, image/gif" 
@@ -211,7 +249,15 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
             </label>
 
             <button
-              onClick={() => setIsCreatingFolder(!isCreatingFolder)}
+              onClick={() => { setIsInsertingUrl(!isInsertingUrl); setIsCreatingFolder(false); }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Link2 className="w-4 h-4 text-slate-500" />
+              <span>Inserir por URL</span>
+            </button>
+
+            <button
+              onClick={() => { setIsCreatingFolder(!isCreatingFolder); setIsInsertingUrl(false); }}
               className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors"
             >
               <FolderPlus className="w-4 h-4 text-slate-500" />
@@ -249,6 +295,39 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Inserir Imagem por URL Direta */}
+        {isInsertingUrl && (
+          <div className="px-6 py-2.5 bg-indigo-50/70 border-b border-indigo-100 flex flex-wrap items-center gap-2 animate-in fade-in">
+            <Link2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <input 
+              type="text"
+              placeholder="Cole a URL HTTPS da imagem (ex: https://...)"
+              value={directUrlInput}
+              onChange={e => setDirectUrlInput(e.target.value)}
+              className="text-xs px-3 py-1.5 bg-white border border-slate-200 rounded-md flex-1 min-w-[240px] focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+            />
+            <input 
+              type="text"
+              placeholder="Nome da imagem (opcional)"
+              value={directUrlName}
+              onChange={e => setDirectUrlName(e.target.value)}
+              className="text-xs px-3 py-1.5 bg-white border border-slate-200 rounded-md w-44 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+            <button 
+              onClick={handleInsertByUrl}
+              className="px-3.5 py-1.5 text-xs bg-indigo-600 text-white rounded-md font-bold hover:bg-indigo-700 transition-colors shadow-2xs"
+            >
+              Adicionar à Biblioteca
+            </button>
+            <button 
+              onClick={() => setIsInsertingUrl(false)}
+              className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
 
         {/* Folder Creator Input (Collapsible) */}
         {isCreatingFolder && (

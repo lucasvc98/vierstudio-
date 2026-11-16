@@ -18,7 +18,15 @@ export function resolveEmailAssetUrl(url?: string): string {
 }
 
 export function compileEmailHtml(doc: EmailDocument): string {
-  const { globalSettings } = doc;
+  const globalSettings = doc.globalSettings || {
+    containerWidth: 600,
+    bodyBgColor: '#f4f5f8',
+    contentBgColor: '#ffffff',
+    defaultFontFamily: 'Arial, Helvetica, sans-serif',
+    defaultTextColor: '#333333',
+    defaultHeadingColor: '#111827',
+    defaultLinkColor: '#6366f1'
+  };
   const containerWidth = globalSettings.containerWidth || 600;
   const bodyBg = globalSettings.bodyBgColor || '#f4f5f8';
   const contentBg = globalSettings.contentBgColor || '#ffffff';

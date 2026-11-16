@@ -1,6 +1,107 @@
 {
   "projects": [
     {
+      "id": "test-migracao-base64",
+      "name": "Template Antigo com Base64",
+      "rows": [
+        {
+          "id": "r1",
+          "layout": "1-col",
+          "style": {},
+          "columns": [
+            {
+              "id": "c1",
+              "widthPercentage": 100,
+              "style": {},
+              "blocks": [
+                {
+                  "id": "b1",
+                  "type": "image",
+                  "content": {
+                    "url": "https://files.catbox.moe/3umu8k.png",
+                    "alt": "Imagem Base64 Antiga"
+                  },
+                  "style": {
+                    "textAlign": "center"
+                  },
+                  "deviceVisibility": "all"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "globalSettings": {
+        "containerWidth": 600,
+        "bodyBgColor": "#f4f5f8"
+      },
+      "updatedAt": "2026-11-16T16:18:07.142Z"
+    },
+    {
+      "id": "test-proj-replace",
+      "name": "Teste Substituição",
+      "status": "draft",
+      "rows": [
+        {
+          "id": "r1",
+          "layout": "1-col",
+          "style": {},
+          "columns": [
+            {
+              "id": "c1",
+              "widthPercentage": 100,
+              "style": {},
+              "blocks": [
+                {
+                  "id": "b1",
+                  "type": "image",
+                  "content": {
+                    "url": "https://files.catbox.moe/zxioii.jpg",
+                    "alt": "Banner Oficial"
+                  },
+                  "style": {
+                    "textAlign": "center",
+                    "borderRadius": 8
+                  },
+                  "deviceVisibility": "all"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "globalSettings": {
+        "containerWidth": 600,
+        "bodyBgColor": "#f4f5f8"
+      },
+      "updatedAt": "2026-11-16T16:18:06.610Z"
+    },
+    {
+      "id": "test-multiline",
+      "name": "Test",
+      "rows": [
+        {
+          "id": "r1",
+          "columns": [
+            {
+              "id": "c1",
+              "blocks": [
+                {
+                  "id": "b1",
+                  "type": "image",
+                  "content": {
+                    "url": "https://files.catbox.moe/3umu8k.png"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "updatedAt": "2026-11-16T15:37:48.663Z",
+      "createdAt": "2026-11-16T15:37:48.663Z"
+    },
+    {
       "id": "test-large",
       "name": "Test Large",
       "rows": [

@@ -278,9 +278,10 @@ apiRouter.post('/clean-base64-images', async (req, res) => {
       }
     }
 
-    // Save cleaned project to storage if it has an id
+    // Save cleaned project and snapshot backup
     if (clonedDoc.id && replacedCount > 0) {
       try {
+        storage.saveTemplateBackup(doc, 'base64_migration');
         storage.saveProject(clonedDoc);
       } catch (e) {}
     }

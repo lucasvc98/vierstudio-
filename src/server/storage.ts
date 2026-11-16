@@ -605,6 +605,24 @@ class StorageManager {
     return this.state.boardFolders;
   }
 
+  public saveTemplateBackup(doc: EmailDocument, reason = 'base64_migration') {
+    try {
+      const backupsDir = path.resolve(DATA_DIR, 'backups');
+      if (!fs.existsSync(backupsDir)) {
+        fs.mkdirSync(backupsDir, { recursive: true });
+      }
+      const safeId = (doc.id || 'email').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const backupFile = path.join(backupsDir, `${safeId}-${Date.now()}.json`);
+      fs.writeFileSync(backupFile, JSON.stringify({
+        doc,
+        reason,
+        timestamp: new Date().toISOString()
+      }, null, 2), 'utf-8');
+    } catch (e) {
+      console.warn('Falha ao salvar snapshot de backup:', e);
+    }
+  }
+
   public getUser() {
     return this.state.user;
   }

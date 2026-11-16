@@ -1414,6 +1414,7 @@ export const App: React.FC = () => {
                   onUpdateRow={handleUpdateRow}
                   onOpenFileManager={() => setIsFileManagerOpen(true)}
                   onDeselectBlock={() => setSelectedBlockId(null)}
+                  onDeleteBlock={handleDeleteBlock}
                   globalSettings={currentProject.globalSettings}
                 />
               </div>

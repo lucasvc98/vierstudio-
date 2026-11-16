@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Copy, Download, Code2, Check, AlertTriangle, ShieldCheck, ExternalLink, Sparkles, Cloud } from 'lucide-react';
+import { X, Copy, Download, Code2, Check, AlertTriangle, ShieldCheck, ExternalLink, Sparkles, Cloud, Lock } from 'lucide-react';
 import { EmailDocument } from '../../types/email';
 import { compileEmailHtml } from '../../utils/emailCompiler';
-import { hasBase64Images, cleanDocumentBase64Images } from '../../utils/cloudImageUploader';
+import { hasBase64Images, cleanDocumentBase64Images, auditEmailForExport, EmailExportAudit } from '../../utils/cloudImageUploader';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -62,13 +62,18 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   if (!isOpen) return null;
 
+  const audit: EmailExportAudit = auditEmailForExport(activeDoc);
   const compiledHtml = compileEmailHtml(activeDoc);
   const sizeBytes = new Blob([compiledHtml]).size;
   const sizeKb = (sizeBytes / 1024).toFixed(1);
   const isGmailSafe = sizeBytes < 102400; // 102KB limit
-  const containsBase64 = hasBase64Images(activeDoc);
+  const containsBase64 = !audit.canExport || hasBase64Images(activeDoc);
 
   const handleCopy = async () => {
+    if (!audit.canExport) {
+      await handleAutoConvert();
+      return;
+    }
     try {
       let htmlToCopy = compiledHtml;
       if (containsBase64) {
@@ -90,6 +95,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   const handleDownload = async () => {
+    if (!audit.canExport) {
+      await handleAutoConvert();
+      return;
+    }
     let docToDownload = activeDoc;
     if (containsBase64) {
       setIsConverting(true);
@@ -138,18 +147,24 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
+              disabled={isConverting}
+              title={!audit.canExport ? "Existem imagens que precisam ser publicadas antes de exportar este e-mail" : "Copiar HTML compatível com Brevo"}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-xs ${
-                copied 
-                  ? 'bg-emerald-600 text-white' 
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                !audit.canExport
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer ring-2 ring-amber-400/40'
+                  : copied 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
               }`}
             >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'HTML Copiado!' : 'Copiar HTML'}</span>
+              {copied ? <Check className="w-4 h-4" /> : !audit.canExport ? <Lock className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              <span>{copied ? 'HTML Copiado!' : !audit.canExport ? 'Publicar e Copiar' : 'Copiar HTML'}</span>
             </button>
 
             <button
               onClick={handleDownload}
+              disabled={isConverting}
+              title={!audit.canExport ? "Existem imagens que precisam ser publicadas antes de exportar este e-mail" : "Baixar arquivo .html"}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
             >
               <Download className="w-4 h-4 text-slate-600" />
@@ -191,12 +206,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
             <div>
               {containsBase64 ? (
-                <span className="flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-semibold text-[11px] border border-amber-200">
+                <span className="flex items-center gap-1 text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-md font-bold text-[11px] border border-amber-300">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Imagens Base64 detectadas
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-semibold text-[11px] border border-emerald-200">
-                  <Check className="w-3.5 h-3.5 text-emerald-600" /> 100% Compatível com Brevo & Mailchimp
+                <span className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md font-bold text-[11px] border border-emerald-200">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" /> 100% Compatível com Brevo & Mailchimp (Zero Base64)
                 </span>
               )}
             </div>
@@ -224,29 +239,39 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           </div>
         </div>
 
-        {/* Warning Banner for Brevo / Base64 */}
-        {containsBase64 && (
-          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center justify-between text-xs text-amber-900 animate-in fade-in duration-200">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+        {/* Warning Banner / Publication Gatekeeper for Brevo / Base64 */}
+        {!audit.canExport && (
+          <div className="bg-amber-500/10 border-b border-amber-300 px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-950 animate-in fade-in duration-200">
+            <div className="flex items-start gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                <Lock className="w-4 h-4" />
+              </div>
               <div>
-                <span className="font-bold">Aviso Brevo/Mailchimp:</span> O Brevo rejeita imagens em Base64. Clique ao lado para converter e hospedar na nuvem em alta velocidade.
+                <div className="font-extrabold text-amber-900 text-sm flex items-center gap-2">
+                  <span>Existem imagens que precisam ser publicadas antes de exportar este e-mail.</span>
+                  <span className="px-2 py-0.5 text-[10px] bg-amber-200 text-amber-900 font-bold rounded-full">
+                    {audit.base64Count + audit.blobCount + audit.localPathCount} pendente(s)
+                  </span>
+                </div>
+                <p className="text-amber-800 text-xs mt-0.5 leading-snug">
+                  O Brevo e outras plataformas rejeitam imagens embutidas em Base64 ou links locais. Clique ao lado para publicar e hospedar na nuvem com URLs públicas permanentes (HTTPS).
+                </p>
               </div>
             </div>
             <button
               onClick={handleAutoConvert}
               disabled={isConverting}
-              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+              className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0 disabled:opacity-50 text-xs"
             >
               {isConverting ? (
                 <>
-                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Hospedando Imagens...</span>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Publicando Imagens na Nuvem...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Converter para URLs Públicas (Brevo)</span>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Corrigir imagens automaticamente</span>
                 </>
               )}
             </button>
