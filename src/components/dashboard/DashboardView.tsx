@@ -80,6 +80,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return undefined;
   };
 
+  const findEditedProjectForTemplate = (tmpl: TemplateModel): EmailDocument | undefined => {
+    return projects.find(p => 
+      p.id === `proj-${tmpl.id}` || 
+      p.id === tmpl.id || 
+      (p as any).templateId === tmpl.id ||
+      p.name === tmpl.name ||
+      p.name === `${tmpl.name} (Meu E-mail)`
+    );
+  };
+
   const handleDeleteReadyTemplate = (tmpl: TemplateModel) => {
     if (!confirm(`Deseja realmente excluir o modelo "${tmpl.name}" da galeria de modelos prontos?`)) return;
     setReadyTemplates(prev => prev.filter(t => t.id !== tmpl.id));
@@ -95,14 +105,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   const handleDuplicateReadyTemplate = (tmpl: TemplateModel) => {
+    const existing = findEditedProjectForTemplate(tmpl);
+    const sourceDoc = existing || tmpl.document;
     const clonedDoc: EmailDocument = {
-      ...JSON.parse(JSON.stringify(tmpl.document)),
+      ...JSON.parse(JSON.stringify(sourceDoc)),
       id: `proj-${Date.now()}`,
-      name: `${tmpl.name} (Cópia)`,
+      name: `${existing ? existing.name : tmpl.name} (Cópia)`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: 'draft',
-      thumbnailData: tmpl.thumbnailUrl,
+      thumbnailData: existing?.thumbnailData || getProjectThumbnail(sourceDoc) || tmpl.thumbnailUrl,
       folder: 'Campanhas 2026'
     };
     if (onSaveNewProject) {
@@ -113,7 +125,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   const handleEditReadyTemplate = (tmpl: TemplateModel) => {
-    const existing = projects.find(p => p.id === `proj-${tmpl.id}` || p.id === tmpl.id);
+    const existing = findEditedProjectForTemplate(tmpl);
     if (existing) {
       onOpenProject(existing);
     } else {
@@ -691,6 +703,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredReadyTemplates.map(tmpl => {
                 const isMenuOpen = activeMenuId === tmpl.id;
+                const editedProj = findEditedProjectForTemplate(tmpl);
+                const displayThumbnail = editedProj?.thumbnailData || (editedProj ? getProjectThumbnail(editedProj) : undefined) || tmpl.thumbnailUrl;
+                const displayName = editedProj?.name || tmpl.name;
+
                 return (
                   <div 
                     key={tmpl.id}
@@ -700,16 +716,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   >
                     <div className="relative h-56 bg-slate-100 overflow-hidden">
                       <img 
-                        src={tmpl.thumbnailUrl} 
-                        alt={tmpl.name} 
+                        src={displayThumbnail} 
+                        alt={displayName} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                       />
                       
-                      {tmpl.badge && (
-                        <span className="absolute top-3 left-3 bg-indigo-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-md shadow-xs uppercase tracking-wider z-20">
-                          {tmpl.badge}
-                        </span>
-                      )}
+                      <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-20">
+                        {editedProj && (
+                          <span className="bg-emerald-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-md shadow-xs uppercase tracking-wider flex items-center gap-1">
+                            ✓ Salvo / Personalizado
+                          </span>
+                        )}
+                        {tmpl.badge && !editedProj && (
+                          <span className="bg-indigo-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-md shadow-xs uppercase tracking-wider">
+                            {tmpl.badge}
+                          </span>
+                        )}
+                      </div>
 
                       {/* Top-Right: 3 Dots Menu Button on Thumbnail */}
                       <div className="absolute top-3 right-3 z-30">
@@ -735,7 +758,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-1.5"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                          <span>Editar Modelo</span>
+                          <span>{editedProj ? 'Continuar Editando' : 'Editar Modelo'}</span>
                         </button>
                       </div>
                     </div>
@@ -754,9 +777,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           <h3 
                             onClick={() => handleEditReadyTemplate(tmpl)}
                             className="font-bold text-slate-900 text-base mb-1 hover:text-indigo-600 cursor-pointer line-clamp-1"
-                            title={tmpl.name}
+                            title={displayName}
                           >
-                            {tmpl.name}
+                            {displayName}
                           </h3>
 
                           {/* 3 Dots Menu beside Title */}
@@ -819,14 +842,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
 
                       <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
-                          100% Editável
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
+                          editedProj ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : 'text-emerald-600 bg-emerald-50'
+                        }`}>
+                          {editedProj ? 'Suas edições salvas' : '100% Editável'}
                         </span>
                         <button
                           onClick={() => handleEditReadyTemplate(tmpl)}
                           className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
                         >
-                          Personalizar →
+                          {editedProj ? 'Editar →' : 'Personalizar →'}
                         </button>
                       </div>
                     </div>

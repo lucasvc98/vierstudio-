@@ -34,6 +34,7 @@ interface CanvasAreaProps {
   onDropRow: (layout: string, index?: number) => void;
   onSaveBlockAsReusable: (block: EmailBlock, isRow?: boolean) => void;
   deviceView: 'desktop' | 'mobile';
+  onLiveDomChange?: (blockId: string, field: string | undefined, html: string, text: string) => void;
 }
 
 export const CanvasArea: React.FC<CanvasAreaProps> = ({
@@ -54,7 +55,8 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
   onMoveBlockToPosition,
   onDropRow,
   onSaveBlockAsReusable,
-  deviceView
+  deviceView,
+  onLiveDomChange
 }) => {
   const [dropTarget, setDropTarget] = useState<DropTargetState | null>(null);
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
@@ -625,6 +627,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                 data-block-id={block.id}
                 contentEditable
                 suppressContentEditableWarning
+                onInput={(e) => {
+                  if (onLiveDomChange) {
+                    onLiveDomChange(block.id, undefined, e.currentTarget.innerHTML, e.currentTarget.innerText);
+                  }
+                }}
                 onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, html: e.currentTarget.innerHTML, text: e.currentTarget.innerText } })}
                 dangerouslySetInnerHTML={{ __html: block.content.html || block.content.text || '' }}
                 style={{
@@ -648,6 +655,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                 data-block-id={block.id}
                 contentEditable
                 suppressContentEditableWarning
+                onInput={(e) => {
+                  if (onLiveDomChange) {
+                    onLiveDomChange(block.id, undefined, e.currentTarget.innerHTML, e.currentTarget.innerText);
+                  }
+                }}
                 onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, html: e.currentTarget.innerHTML, text: e.currentTarget.innerText } })}
                 dangerouslySetInnerHTML={{ __html: block.content.html || block.content.text || '' }}
                 style={{
@@ -886,6 +898,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       data-field="brandText"
                       contentEditable
                       suppressContentEditableWarning
+                      onInput={(e) => {
+                        if (onLiveDomChange) {
+                          onLiveDomChange(block.id, 'brandText', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                        }
+                      }}
                       onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, brandText: e.currentTarget.innerHTML } })}
                       dangerouslySetInnerHTML={{ __html: block.content.brandText || 'MONETTER' }}
                       style={{ color: block.content.brandColor || '#ffffff', fontSize: '18px', fontWeight: 800, letterSpacing: '0.5px' }}
@@ -897,6 +914,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                     data-field="sloganText"
                     contentEditable
                     suppressContentEditableWarning
+                    onInput={(e) => {
+                      if (onLiveDomChange) {
+                        onLiveDomChange(block.id, 'sloganText', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                      }
+                    }}
                     onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, sloganText: e.currentTarget.innerHTML } })}
                     dangerouslySetInnerHTML={{ __html: block.content.sloganText || '• NEGOCIE MAIS ATIVOS' }}
                     style={{ color: block.content.sloganColor || '#ff6b00', fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}
@@ -909,6 +931,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                     data-field="badgeText"
                     contentEditable
                     suppressContentEditableWarning
+                    onInput={(e) => {
+                      if (onLiveDomChange) {
+                        onLiveDomChange(block.id, 'badgeText', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                      }
+                    }}
                     onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, badgeText: e.currentTarget.innerHTML } })}
                     dangerouslySetInnerHTML={{ __html: block.content.badgeText }}
                     style={{
@@ -977,6 +1004,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                     data-field="title"
                     contentEditable
                     suppressContentEditableWarning
+                    onInput={(e) => {
+                      if (onLiveDomChange) {
+                        onLiveDomChange(block.id, 'title', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                      }
+                    }}
                     onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, title: e.currentTarget.innerHTML } })}
                     dangerouslySetInnerHTML={{ __html: block.content.title || 'Título do Tópico' }}
                     style={{
@@ -992,6 +1024,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                     data-field="description"
                     contentEditable
                     suppressContentEditableWarning
+                    onInput={(e) => {
+                      if (onLiveDomChange) {
+                        onLiveDomChange(block.id, 'description', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                      }
+                    }}
                     onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, description: e.currentTarget.innerHTML } })}
                     dangerouslySetInnerHTML={{ __html: block.content.description || 'Descrição do tópico.' }}
                     style={{
@@ -1047,6 +1084,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                       data-field="badge"
                       contentEditable
                       suppressContentEditableWarning
+                      onInput={(e) => {
+                        if (onLiveDomChange) {
+                          onLiveDomChange(block.id, 'badge', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                        }
+                      }}
                       onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, badge: e.currentTarget.innerHTML } })}
                       dangerouslySetInnerHTML={{ __html: block.content.badge }}
                       style={{
@@ -1066,6 +1108,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                     data-field="title"
                     contentEditable
                     suppressContentEditableWarning
+                    onInput={(e) => {
+                      if (onLiveDomChange) {
+                        onLiveDomChange(block.id, 'title', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                      }
+                    }}
                     onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, title: e.currentTarget.innerHTML } })}
                     dangerouslySetInnerHTML={{ __html: block.content.title || 'Super Live com PH' }}
                     style={{
@@ -1082,6 +1129,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                     data-field="dates"
                     contentEditable
                     suppressContentEditableWarning
+                    onInput={(e) => {
+                      if (onLiveDomChange) {
+                        onLiveDomChange(block.id, 'dates', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                      }
+                    }}
                     onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, dates: e.currentTarget.innerHTML } })}
                     dangerouslySetInnerHTML={{ __html: block.content.dates || '🗓️ Dias 19 e 20/11' }}
                     style={{
@@ -1098,6 +1150,11 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
                     data-field="times"
                     contentEditable
                     suppressContentEditableWarning
+                    onInput={(e) => {
+                      if (onLiveDomChange) {
+                        onLiveDomChange(block.id, 'times', e.currentTarget.innerHTML, e.currentTarget.innerText);
+                      }
+                    }}
                     onBlur={(e) => onUpdateBlock({ ...block, content: { ...block.content, times: e.currentTarget.innerHTML } })}
                     dangerouslySetInnerHTML={{ __html: block.content.times || '🕒 12h às 14h • 20h às 22h' }}
                     style={{

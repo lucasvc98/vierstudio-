@@ -21,10 +21,24 @@ import { SaveBlockModal } from './components/modals/SaveBlockModal';
 import { ImportHtmlModal } from './components/modals/ImportHtmlModal';
 import { LeadSubmissionsModal } from './components/modals/LeadSubmissionsModal';
 import { AiPageGeneratorModal } from './components/modals/AiPageGeneratorModal';
+import { flushDomEditsToDoc } from './utils/domSync';
 
 export const App: React.FC = () => {
   // Global Product Switcher ('emails' | 'pages' | 'boards')
-  const [activeProduct, setActiveProduct] = useState<'emails' | 'pages' | 'boards'>('boards');
+  const [activeProduct, setActiveProduct] = useState<'emails' | 'pages' | 'boards'>(() => {
+    try {
+      return (localStorage.getItem('vierstudio_active_product') as any) || 'emails';
+    } catch {
+      return 'emails';
+    }
+  });
+
+  const handleSetActiveProduct = (prod: 'emails' | 'pages' | 'boards') => {
+    setActiveProduct(prod);
+    try {
+      localStorage.setItem('vierstudio_active_product', prod);
+    } catch {}
+  };
 
   // Navigation & Views for Miro Boards / Mind Maps
   const [currentBoard, setCurrentBoard] = useState<BoardDocument | null>(null);
@@ -94,16 +108,31 @@ export const App: React.FC = () => {
       try {
         localStorage.setItem('vierstudio_email_projects', JSON.stringify(next));
       } catch (err) {
-        console.warn('Failed to save to localStorage:', err);
+        console.warn('Falha no armazenamento local completo, podando miniaturas antigas:', err);
+        try {
+          // If quota exceeded, prune thumbnails from older projects
+          const pruned = next.map((p, i) => i === 0 ? p : { ...p, thumbnailData: undefined });
+          localStorage.setItem('vierstudio_email_projects', JSON.stringify(pruned));
+        } catch (e) {
+          console.error('Limite crítico de localStorage atingido:', e);
+        }
       }
       return next;
     });
+
+    try {
+      localStorage.setItem('vierstudio_active_project_backup', JSON.stringify(docToSave));
+    } catch (e) {}
   };
 
   // Immediate save (both local and server)
   const handleSaveProject = async (targetDoc?: EmailDocument | null, _showFeedback = true) => {
-    const docToSave = targetDoc || currentProjectRef.current || currentProject;
-    if (!docToSave) return;
+    const baseDoc = targetDoc || currentProjectRef.current || currentProject;
+    if (!baseDoc) return;
+
+    // 1. Flush any active DOM edits from contentEditable into the document
+    const docToSave = flushDomEditsToDoc(baseDoc) || baseDoc;
+    docToSave.updatedAt = new Date().toISOString();
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -111,17 +140,25 @@ export const App: React.FC = () => {
     }
 
     setIsSaving(true);
+    currentProjectRef.current = docToSave;
+    setCurrentProject(docToSave);
+
+    // 2. Synchronize to localStorage immediately
     syncToLocalProjects(docToSave);
 
+    // 3. Persist to server database
     try {
-      await fetch('/api/projects', {
+      const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(docToSave)
       });
-      setLastSavedAt(new Date());
+      const data = await res.json();
+      if (data.success && data.project) {
+        setLastSavedAt(new Date());
+      }
     } catch (err) {
-      console.error('Failed to save project:', err);
+      console.error('Falha ao salvar projeto no servidor:', err);
     } finally {
       setIsSaving(false);
     }
@@ -131,11 +168,12 @@ export const App: React.FC = () => {
   const handleSaveAsNewTemplate = async () => {
     const baseDoc = currentProjectRef.current || currentProject;
     if (!baseDoc) return;
-    const templateName = prompt('Nome do novo template:', `${baseDoc.name} (Template)`);
+    const flushed = flushDomEditsToDoc(baseDoc) || baseDoc;
+    const templateName = prompt('Nome do novo template:', `${flushed.name} (Template)`);
     if (!templateName || !templateName.trim()) return;
 
     const newTemplateDoc: EmailDocument = {
-      ...JSON.parse(JSON.stringify(baseDoc)),
+      ...JSON.parse(JSON.stringify(flushed)),
       id: `proj-tmpl-${Date.now()}`,
       name: templateName.trim(),
       createdAt: new Date().toISOString(),
@@ -151,9 +189,13 @@ export const App: React.FC = () => {
 
   // Immediate save and return to dashboard
   const handleBackToDashboard = async () => {
-    if (currentProjectRef.current || currentProject) {
-      await handleSaveProject(currentProjectRef.current || currentProject, false);
+    const base = currentProjectRef.current || currentProject;
+    if (base) {
+      const flushed = flushDomEditsToDoc(base) || base;
+      await handleSaveProject(flushed, false);
     }
+    setSelectedBlockId(null);
+    setSelectedRowId(null);
     setCurrentView('dashboard');
   };
 
@@ -174,14 +216,18 @@ export const App: React.FC = () => {
   // Save on tab close or refresh
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (currentProjectRef.current) {
+      const base = currentProjectRef.current || currentProject;
+      if (base) {
+        const flushed = flushDomEditsToDoc(base) || base;
+        flushed.updatedAt = new Date().toISOString();
         try {
           const raw = localStorage.getItem('vierstudio_email_projects');
           const list: EmailDocument[] = raw ? JSON.parse(raw) : [];
-          const idx = list.findIndex(p => p.id === currentProjectRef.current!.id);
-          if (idx >= 0) list[idx] = currentProjectRef.current!;
-          else list.unshift(currentProjectRef.current!);
+          const idx = list.findIndex(p => p.id === flushed.id);
+          if (idx >= 0) list[idx] = flushed;
+          else list.unshift(flushed);
           localStorage.setItem('vierstudio_email_projects', JSON.stringify(list));
+          localStorage.setItem('vierstudio_active_project_backup', JSON.stringify(flushed));
         } catch (e) {}
       }
     };
@@ -329,11 +375,15 @@ export const App: React.FC = () => {
     setIsSaving(true);
 
     saveTimeoutRef.current = setTimeout(async () => {
+      const latest = flushDomEditsToDoc(currentProjectRef.current || docToSave) || docToSave;
+      latest.updatedAt = new Date().toISOString();
+      currentProjectRef.current = latest;
+      syncToLocalProjects(latest);
       try {
         await fetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(docToSave)
+          body: JSON.stringify(latest)
         });
         setLastSavedAt(new Date());
       } catch (err) {
@@ -341,8 +391,25 @@ export const App: React.FC = () => {
       } finally {
         setIsSaving(false);
       }
-    }, 1000);
+    }, 500);
   };
+
+  // Continuous background auto-save while editor is open (every 8 seconds)
+  useEffect(() => {
+    if (currentView !== 'editor') return;
+
+    const interval = setInterval(() => {
+      const base = currentProjectRef.current || currentProject;
+      if (base) {
+        const flushed = flushDomEditsToDoc(base);
+        if (flushed) {
+          handleSaveProject(flushed, false);
+        }
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [currentView]);
 
   const handleUndo = () => {
     if (historyIndex > 0) {
@@ -399,23 +466,41 @@ export const App: React.FC = () => {
 
   // Select Ready Template Model
   const handleSelectTemplate = (template: TemplateModel) => {
-    const clonedDoc: EmailDocument = {
+    // 1. Check if an edited version already exists
+    const existing = projects.find(p => 
+      p.id === `proj-${template.id}` || 
+      p.id === template.id || 
+      (p as any).templateId === template.id ||
+      p.name === template.name ||
+      p.name === `${template.name} (Meu E-mail)`
+    );
+
+    if (existing) {
+      handleOpenProject(existing);
+      return;
+    }
+
+    const newDoc: EmailDocument = {
       ...JSON.parse(JSON.stringify(template.document)),
-      id: `proj-${Date.now()}`,
-      name: `${template.name} (Meu E-mail)`,
+      id: `proj-${template.id}`,
+      name: template.name,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: 'draft',
-      thumbnailData: template.thumbnailUrl
+      thumbnailData: template.thumbnailUrl,
+      folder: template.document.folder || 'Campanhas 2026'
     };
+    (newDoc as any).templateId = template.id;
 
-    setCurrentProject(clonedDoc);
-    setHistory([clonedDoc]);
+    syncToLocalProjects(newDoc);
+    setCurrentProject(newDoc);
+    currentProjectRef.current = newDoc;
+    setHistory([newDoc]);
     setHistoryIndex(0);
     setSelectedBlockId(null);
     setSelectedRowId(null);
     setCurrentView('editor');
-    triggerAutoSave(clonedDoc);
+    triggerAutoSave(newDoc);
   };
 
   // Move Project to Folder
@@ -712,6 +797,32 @@ export const App: React.FC = () => {
     currentProjectRef.current = nextDoc;
     setCurrentProject(nextDoc);
     pushToHistory(nextDoc);
+  };
+
+  // Real-time silent sync from contentEditable DOM to in-memory ref
+  const handleLiveDomChange = (blockId: string, field: string | undefined, html: string, text: string) => {
+    const base = currentProjectRef.current || currentProject;
+    if (!base) return;
+    const nextDoc: EmailDocument = {
+      ...base,
+      updatedAt: new Date().toISOString(),
+      rows: base.rows.map(row => ({
+        ...row,
+        columns: row.columns.map(col => ({
+          ...col,
+          blocks: col.blocks.map(b => {
+            if (b.id !== blockId) return b;
+            return {
+              ...b,
+              content: field
+                ? { ...b.content, [field]: html }
+                : { ...b.content, html, text }
+            };
+          })
+        }))
+      }))
+    };
+    currentProjectRef.current = nextDoc;
   };
 
   const handleDuplicateBlock = (blockId: string) => {
@@ -1261,6 +1372,7 @@ export const App: React.FC = () => {
                   onMoveBlockToPosition={handleMoveBlockToPosition}
                   onDropRow={handleDropRow}
                   onSaveBlockAsReusable={handleSaveBlockAsReusable}
+                  onLiveDomChange={handleLiveDomChange}
                   deviceView={deviceView}
                 />
 

@@ -2,9 +2,9 @@
   "projects": [
     {
       "id": "proj-tmpl-monetter-superlive-ph",
-      "name": "Monetter — Já teve prejuízo no trading? (Super Live com PH)",
-      "subject": "Já teve prejuízo no trading? 👀 (Super Live com PH nos dias 19 e 20/11)",
-      "preheader": "PH vai revelar na Super Live erros que muitos traders cometem e como virar a chave. +10 premiações ao vivo.",
+      "name": "Monetter - J� teve preju�zo no trading? (Super Live com PH)",
+      "subject": "J� teve preju�zo no trading? ?? (Super Live com PH nos dias 19 e 20/11)",
+      "preheader": "PH vai revelar na Super Live erros que muitos traders cometem e como virar a chave. +10 premia��es ao vivo.",
       "folder": "Campanhas 2026",
       "globalSettings": {
         "containerWidth": 600,
@@ -23,7 +23,7 @@
         "sectionSpacing": 0
       },
       "createdAt": "2026-11-15T15:55:00Z",
-      "updatedAt": "2026-11-15T20:54:35.001Z",
+      "updatedAt": "2026-11-16T13:48:59.297Z",
       "rows": [
         {
           "id": "row-monetter-header",
@@ -51,8 +51,8 @@
                   "type": "header",
                   "content": {
                     "brandText": "MONETTER",
-                    "sloganText": "• NEGOCIE MAIS ATIVOS",
-                    "badgeText": "🔴 SUPER LIVE VIP",
+                    "sloganText": ". NEGOCIE MAIS ATIVOS",
+                    "badgeText": "?? SUPER LIVE VIP",
                     "badgeUrl": "#",
                     "brandColor": "#ffffff",
                     "sloganColor": "#ff6b00",
@@ -95,7 +95,7 @@
                   "type": "image",
                   "content": {
                     "url": "/templates/monetter/banner-superlive-ph.jpg",
-                    "alt": "Já teve prejuízo no trading com essas corretoras? Não perca a Super Live com o PH nos dias 19 e 20/11",
+                    "alt": "J� teve preju�zo no trading com essas corretoras? N�o perca a Super Live com o PH nos dias 19 e 20/11",
                     "link": "https://chat.whatsapp.com/exemplo-grupo-vip-ph",
                     "width": "100%"
                   },
@@ -135,7 +135,7 @@
                   "id": "blk-monetter-title",
                   "type": "heading",
                   "content": {
-                    "text": "Já teve prejuízo no trading? 👀",
+                    "text": "J� teve preju�zo no trading? ??",
                     "level": 1
                   },
                   "style": {
@@ -178,7 +178,7 @@
                   "id": "blk-monetter-copy-p1",
                   "type": "text",
                   "content": {
-                    "text": "Nos dias <strong>19 e 20/11</strong>, o <strong>PH</strong> vai revelar na <strong>Super Live</strong> os erros que muitos traders cometem todos os dias sem perceber — e compartilhar as estratégias práticas de análise de mercado e gestão de risco profissional que você precisa para virar o jogo."
+                    "text": "Nos dias <strong>19 e 20/11</strong>, o <strong>PH</strong> vai revelar na <strong>Super Live</strong> os erros que muitos traders cometem todos os dias sem perceber - e compartilhar as estrat�gias pr�ticas de an�lise de mercado e gest�o de risco profissional que voc� precisa para virar o jogo."
                   },
                   "style": {
                     "color": "#e2e8f0",
@@ -194,7 +194,7 @@
                   "id": "blk-monetter-schedule-box",
                   "type": "html",
                   "content": {
-                    "html": "\n                      <div style=\"background: linear-gradient(135deg, rgba(255,107,0,0.12), rgba(255,107,0,0.04)); border: 1px solid #ff6b00; border-radius: 12px; padding: 18px 24px; text-align: center; margin-bottom: 8px;\">\n                        <p style=\"color: #ff8a00; font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 0 0 6px 0; letter-spacing: 1px;\">🗓️ DATAS & HORÁRIOS CONFIRMADOS</p>\n                        <p style=\"color: #ffffff; font-size: 16px; font-weight: 800; margin: 0 0 4px 0;\">Dias 19 e 20 de Novembro</p>\n                        <p style=\"color: #cbd5e1; font-size: 14px; margin: 0;\">\n                          <span style=\"color: #ffffff; font-weight: 700;\">1º Turno:</span> 12h às 14h &nbsp;•&nbsp; <span style=\"color: #ffffff; font-weight: 700;\">2º Turno:</span> 20h às 22h\n                        </p>\n                      </div>\n                    "
+                    "html": "\n                      <div style=\"background: linear-gradient(135deg, rgba(255,107,0,0.12), rgba(255,107,0,0.04)); border: 1px solid #ff6b00; border-radius: 12px; padding: 18px 24px; text-align: center; margin-bottom: 8px;\">\n                        <p style=\"color: #ff8a00; font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 0 0 6px 0; letter-spacing: 1px;\">??? DATAS & HOR�RIOS CONFIRMADOS</p>\n                        <p style=\"color: #ffffff; font-size: 16px; font-weight: 800; margin: 0 0 4px 0;\">Dias 19 e 20 de Novembro</p>\n                        <p style=\"color: #cbd5e1; font-size: 14px; margin: 0;\">\n                          <span style=\"color: #ffffff; font-weight: 700;\">1� Turno:</span> 12h �s 14h &nbsp;.&nbsp; <span style=\"color: #ffffff; font-weight: 700;\">2� Turno:</span> 20h �s 22h\n                        </p>\n                      </div>\n                    "
                   },
                   "style": {
                     "marginTop": 0,
@@ -231,7 +231,7 @@
                   "id": "blk-cards-section-title",
                   "type": "heading",
                   "content": {
-                    "text": "O que o PH vai entregar para você:",
+                    "text": "O que o PH vai entregar para voc�:",
                     "level": 2
                   },
                   "style": {
@@ -248,7 +248,7 @@
                   "id": "blk-card-1",
                   "type": "topic-card",
                   "content": {
-                    "icon": "🎯",
+                    "icon": "??",
                     "iconImage": "",
                     "title": "Erros que travam seus resultados",
                     "description": "Entenda o que faz tantos traders perderem dinheiro sem perceber.",
@@ -268,10 +268,10 @@
                   "id": "blk-card-2",
                   "type": "topic-card",
                   "content": {
-                    "icon": "📊",
+                    "icon": "??",
                     "iconImage": "",
-                    "title": "Estratégias práticas de análise",
-                    "description": "Aprenda leituras e decisões mais conscientes para o mercado.",
+                    "title": "Estrat�gias pr�ticas de an�lise",
+                    "description": "Aprenda leituras e decis�es mais conscientes para o mercado.",
                     "dividerColor": "#ff6b00",
                     "bgColor": "#101522",
                     "borderColor": "#1e293d",
@@ -288,10 +288,10 @@
                   "id": "blk-card-3",
                   "type": "topic-card",
                   "content": {
-                    "icon": "🛡️",
+                    "icon": "???",
                     "iconImage": "",
-                    "title": "Gestão de risco profissional",
-                    "description": "Saiba como proteger melhor sua banca e evitar decisões por impulso.",
+                    "title": "Gest�o de risco profissional",
+                    "description": "Saiba como proteger melhor sua banca e evitar decis�es por impulso.",
                     "dividerColor": "#ff6b00",
                     "bgColor": "#101522",
                     "borderColor": "#1e293d",
@@ -333,12 +333,12 @@
                   "id": "blk-schedule-glowing-box",
                   "type": "schedule-box",
                   "content": {
-                    "icon": "📅",
+                    "icon": "??",
                     "iconImage": "",
-                    "badge": "DATAS & HORÁRIOS CONFIRMADOS",
+                    "badge": "DATAS & HOR�RIOS CONFIRMADOS",
                     "title": "Super Live com PH",
                     "dates": "Dias 19 e 20 de Novembro",
-                    "times": "1º Turno: 12h às 14h • 2º Turno: 20h às 22h",
+                    "times": "1� Turno: 12h �s 14h . 2� Turno: 20h �s 22h",
                     "accentColor": "#ff6b00",
                     "bgColor": "rgba(11, 15, 25, 0.92)",
                     "borderColor": "#ff6b00"
@@ -377,7 +377,7 @@
                   "id": "blk-footer-monetter-official",
                   "type": "html",
                   "content": {
-                    "html": "\n                      <div style=\"text-align: center; padding-top: 10px;\">\n                        <!-- Logo Monetter Oficial -->\n                        <div style=\"margin-bottom: 10px;\">\n                          <span style=\"color: #ffffff; font-size: 17px; font-weight: 800; letter-spacing: 0.5px; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">\n                            <span style=\"color: #ff6b00; font-size: 20px; vertical-align: middle; margin-right: 4px;\">◈</span>Monetter\n                          </span>\n                          <div style=\"color: #ff6b00; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;\">\n                            NEGOCIE MAIS ATIVOS\n                          </div>\n                        </div>\n\n                        <!-- Tagline & Disclaimer exatamente como na imagem -->\n                        <p style=\"color: #cbd5e1; font-size: 13px; font-style: italic; margin: 0 0 6px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">\n                          Monetter — Visão de Gigante\n                        </p>\n                        <p style=\"color: #64748b; font-size: 11px; font-style: italic; line-height: 16px; margin: 0 0 16px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">\n                          Trading envolve riscos. Premiações sujeitas a regulamento.\n                        </p>\n\n                        <!-- Links de descadastro -->\n                        <p style=\"margin: 0; font-size: 11px; color: #475569;\">\n                          <a href=\"#\" style=\"color: #64748b; text-decoration: underline;\">Gerenciar Preferências</a> &nbsp;|&nbsp; \n                          <a href=\"#\" style=\"color: #64748b; text-decoration: underline;\">Descadastrar</a>\n                        </p>\n                      </div>\n                    "
+                    "html": "\n                      <div style=\"text-align: center; padding-top: 10px;\">\n                        <!-- Logo Monetter Oficial -->\n                        <div style=\"margin-bottom: 10px;\">\n                          <span style=\"color: #ffffff; font-size: 17px; font-weight: 800; letter-spacing: 0.5px; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">\n                            <span style=\"color: #ff6b00; font-size: 20px; vertical-align: middle; margin-right: 4px;\">?</span>Monetter\n                          </span>\n                          <div style=\"color: #ff6b00; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;\">\n                            NEGOCIE MAIS ATIVOS\n                          </div>\n                        </div>\n\n                        <!-- Tagline & Disclaimer exatamente como na imagem -->\n                        <p style=\"color: #cbd5e1; font-size: 13px; font-style: italic; margin: 0 0 6px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">\n                          Monetter - Vis�o de Gigante\n                        </p>\n                        <p style=\"color: #64748b; font-size: 11px; font-style: italic; line-height: 16px; margin: 0 0 16px 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif;\">\n                          Trading envolve riscos. Premia��es sujeitas a regulamento.\n                        </p>\n\n                        <!-- Links de descadastro -->\n                        <p style=\"margin: 0; font-size: 11px; color: #475569;\">\n                          <a href=\"#\" style=\"color: #64748b; text-decoration: underline;\">Gerenciar Prefer�ncias</a> &nbsp;|&nbsp; \n                          <a href=\"#\" style=\"color: #64748b; text-decoration: underline;\">Descadastrar</a>\n                        </p>\n                      </div>\n                    "
                   },
                   "style": {
                     "marginTop": 0,
