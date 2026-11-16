@@ -198,13 +198,29 @@ apiRouter.post('/clean-base64-images', async (req, res) => {
                 // Check all content properties for data:image
                 for (const key of Object.keys(block.content)) {
                   const val = block.content[key];
-                  if (typeof val === 'string' && val.startsWith('data:image/')) {
-                    try {
-                      const resUpload = await uploadBase64ToCdn(val, `${block.type}-${key}.jpg`);
-                      block.content[key] = resUpload.url;
-                      replacedCount++;
-                    } catch (e) {
-                      console.warn(`Falha ao converter base64 no bloco ${block.id}:`, e);
+                  if (typeof val === 'string') {
+                    if (val.startsWith('data:image/')) {
+                      try {
+                        const resUpload = await uploadBase64ToCdn(val, `${block.type}-${key}.jpg`);
+                        block.content[key] = resUpload.url;
+                        replacedCount++;
+                      } catch (e) {
+                        console.warn(`Falha ao converter base64 no bloco ${block.id}:`, e);
+                      }
+                    } else if (val.includes('data:image/')) {
+                      const base64Regex = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/g;
+                      const matches = Array.from(new Set(val.match(base64Regex) || []));
+                      let updatedVal = val;
+                      for (const matchStr of matches) {
+                        try {
+                          const resUpload = await uploadBase64ToCdn(matchStr, `inline-html-img.jpg`);
+                          updatedVal = updatedVal.split(matchStr).join(resUpload.url);
+                          replacedCount++;
+                        } catch (e) {
+                          console.warn('Falha ao converter base64 embutido no HTML:', e);
+                        }
+                      }
+                      block.content[key] = updatedVal;
                     }
                   }
                 }

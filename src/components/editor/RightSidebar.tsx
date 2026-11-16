@@ -3,7 +3,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   Bold, Italic, Underline, Link2, Image as ImageIcon, Sliders, 
   Smartphone, Monitor, Eye, Sparkles, FolderOpen, Tag,
-  LayoutGrid, Plus, Minus, Trash2, Copy, Upload
+  LayoutGrid, Plus, Minus, Trash2, Copy, Upload, AlertTriangle, Check
 } from 'lucide-react';
 import { EmailBlock, EmailRow, EmailColumn, GlobalEmailSettings, MediaAsset } from '../../types/email';
 import { compressImageFile } from '../../utils/imageOptimizer';
@@ -28,6 +28,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   onDeselectBlock,
   globalSettings
 }) => {
+  const [isConvertingImage, setIsConvertingImage] = React.useState(false);
+  const [convertedNotice, setConvertedNotice] = React.useState(false);
+
   // Handler to change column/window quantity dynamically
   const handleChangeColumnCount = (targetCount: number) => {
     if (!selectedRow) return;
@@ -276,12 +279,51 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                           placeholder="URL da imagem (HTTPS)"
                           className="w-full text-xs p-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600"
                         />
-                        <button
-                          onClick={onOpenFileManager}
-                          className="text-[10px] text-indigo-600 font-bold hover:underline flex items-center gap-1"
-                        >
-                          <FolderOpen className="w-3 h-3" /> Trocar na Biblioteca
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={onOpenFileManager}
+                            className="text-[10px] text-indigo-600 font-bold hover:underline flex items-center gap-1"
+                          >
+                            <FolderOpen className="w-3 h-3" /> Trocar na Biblioteca
+                          </button>
+                          {imgBlock.content.url?.startsWith('data:image/') && (
+                            <button
+                              type="button"
+                              disabled={isConvertingImage}
+                              onClick={async () => {
+                                setIsConvertingImage(true);
+                                try {
+                                  const res = await fetch('/api/upload-image', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ base64: imgBlock.content.url, filename: 'produto.jpg' })
+                                  });
+                                  if (res.ok) {
+                                    const data = await res.json();
+                                    if (data.success && data.url) {
+                                      const updatedCols = selectedRow.columns.map(c => {
+                                        if (c.id !== col.id) return c;
+                                        return {
+                                          ...c,
+                                          blocks: c.blocks.map(b => b.id === imgBlock.id ? { ...b, content: { ...b.content, url: data.url } } : b)
+                                        };
+                                      });
+                                      onUpdateRow({ ...selectedRow, columns: updatedCols });
+                                    }
+                                  }
+                                } catch (err) {
+                                  console.error('Erro ao converter base64:', err);
+                                } finally {
+                                  setIsConvertingImage(false);
+                                }
+                              }}
+                              className="text-[10px] text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-colors"
+                            >
+                              <Sparkles className="w-2.5 h-2.5 text-amber-600" />
+                              <span>Remover Base64</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1149,6 +1191,66 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                 <span>Abrir Galeria de Imagens</span>
               </button>
             </div>
+
+            {/* Aviso se a imagem atual for Base64 com botão de 1 clique para converter */}
+            {block.content.url && typeof block.content.url === 'string' && block.content.url.startsWith('data:image/') && (
+              <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl space-y-2 animate-in fade-in duration-200">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Imagem em Base64 (Rejeitada pelo Brevo)</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-snug">
+                  O Brevo não aceita imagens embutidas em código Base64. Clique no botão abaixo para converter e hospedar esta imagem na nuvem com link público oficial (HTTPS).
+                </p>
+                <button
+                  type="button"
+                  disabled={isConvertingImage}
+                  onClick={async () => {
+                    setIsConvertingImage(true);
+                    try {
+                      const res = await fetch('/api/upload-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ base64: block.content.url, filename: `${block.type || 'banner'}.jpg` })
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        if (data.success && data.url) {
+                          updateContent({ url: data.url });
+                          setConvertedNotice(true);
+                          setTimeout(() => setConvertedNotice(false), 3000);
+                        }
+                      }
+                    } catch (err) {
+                      console.error('Falha ao converter base64:', err);
+                      alert('Falha ao converter imagem. Tente novamente.');
+                    } finally {
+                      setIsConvertingImage(false);
+                    }
+                  }}
+                  className="w-full py-2 px-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isConvertingImage ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Convertendo e Hospedando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Remover Base64 (Hospedar na Nuvem)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {convertedNotice && (
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs font-bold text-emerald-800 animate-in fade-in duration-200">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>✓ Imagem hospedada com sucesso! 100% pronta para o Brevo.</span>
+              </div>
+            )}
 
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">Ou cole uma URL Direta</label>

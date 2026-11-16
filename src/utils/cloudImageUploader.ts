@@ -17,7 +17,7 @@ export function hasBase64Images(doc?: EmailDocument | null): boolean {
               if (b && b.content) {
                 for (const key of Object.keys(b.content)) {
                   const val = b.content[key];
-                  if (typeof val === 'string' && val.startsWith('data:image/')) {
+                  if (typeof val === 'string' && (val.startsWith('data:image/') || val.includes('data:image/'))) {
                     return true;
                   }
                 }
