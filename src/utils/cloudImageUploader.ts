@@ -58,29 +58,39 @@ export function auditEmailForExport(doc?: EmailDocument | null): EmailExportAudi
           if (c.blocks && Array.isArray(c.blocks)) {
             c.blocks.forEach((b) => {
               const blockName = `Bloco ${b.type || 'elemento'}`;
-              if (b.content && typeof b.content === 'object') {
-                for (const k of Object.keys(b.content)) {
-                  const v = b.content[k];
-                  if (typeof v === 'string') {
-                    if (k === 'url' || k === 'imageUrl' || k === 'src' || k === 'backgroundImage') {
-                      if (!v.trim() && (b.type === 'image' || b.type === 'logo')) {
-                        unhostedCount++;
-                        issues.push(`${blockName}: Imagem sem endereço`);
-                      } else {
-                        checkUrl(v, `${blockName}.${k}`);
-                      }
-                    } else if (v.includes('data:image/')) {
-                      checkUrl(v, `${blockName}.${k}`);
-                    }
-                  }
+              if (!b.content || typeof b.content !== 'object') return;
+
+              // Topic cards only use iconImage (or emoji icon)
+              if (b.type === 'topic-card' || b.type === 'schedule-box') {
+                if (b.content.iconImage && typeof b.content.iconImage === 'string') {
+                  checkUrl(b.content.iconImage, `${blockName}.iconImage`);
                 }
+                return;
               }
-              if (b.style && typeof b.style === 'object') {
-                for (const sk of Object.keys(b.style)) {
-                  const sv = (b.style as any)[sk];
-                  if (typeof sv === 'string' && sv.includes('data:image/')) {
-                    checkUrl(sv, `${blockName}.style.${sk}`);
-                  }
+
+              // Standard images and logos
+              if (b.type === 'image' || b.type === 'logo') {
+                if (!b.content.url || !b.content.url.trim()) {
+                  unhostedCount++;
+                  issues.push(`${blockName}: Imagem sem endereço`);
+                } else {
+                  checkUrl(b.content.url, `${blockName}.url`);
+                }
+                return;
+              }
+
+              // Hero, Product, and Image-Text blocks
+              if (b.type === 'hero' || b.type === 'product' || b.type === 'image-text') {
+                const imgUrl = b.content.imageUrl || b.content.url;
+                if (imgUrl) checkUrl(imgUrl, `${blockName}.imageUrl`);
+                return;
+              }
+
+              // Check other block types for embedded base64 in any string field
+              for (const k of Object.keys(b.content)) {
+                const v = b.content[k];
+                if (typeof v === 'string' && v.includes('data:image/')) {
+                  checkUrl(v, `${blockName}.${k}`);
                 }
               }
             });
@@ -177,6 +187,8 @@ export async function uploadImageFileToCloud(file: File): Promise<string> {
   return base64;
 }
 
+const clientBase64Cache = new Map<string, string>();
+
 /**
  * Converts all base64 images in an EmailDocument to public cloud CDN URLs.
  * Ensures the email is 100% compatible with Brevo, Mailchimp, RD Station and Gmail.
@@ -219,7 +231,33 @@ export async function cleanDocumentBase64Images(
     const cloned = JSON.parse(JSON.stringify(doc)) as EmailDocument;
     let count = 0;
 
+    // Clean obsolete ghost properties on topic-card or other blocks
+    if (cloned.rows && Array.isArray(cloned.rows)) {
+      for (const row of cloned.rows) {
+        if (row.columns && Array.isArray(row.columns)) {
+          for (const col of row.columns) {
+            if (col.blocks && Array.isArray(col.blocks)) {
+              for (const block of col.blocks) {
+                if (block && block.type === 'topic-card' && block.content) {
+                  delete block.content.url;
+                  delete block.content.imageUrl;
+                  delete block.content.thumbnailUrl;
+                  delete block.content.logoUrl;
+                  delete block.content.avatar;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     const convertOneBase64 = async (b64: string, name: string): Promise<string> => {
+      const cleanKey = b64.replace(/\s+/g, '');
+      if (clientBase64Cache.has(cleanKey)) {
+        return clientBase64Cache.get(cleanKey)!;
+      }
+
       // 1. Try backend upload-image endpoint
       try {
         const r1 = await fetch('/api/upload-image', {
@@ -229,7 +267,10 @@ export async function cleanDocumentBase64Images(
         });
         if (r1.ok) {
           const d1 = await r1.json();
-          if (d1.success && d1.url) return d1.url;
+          if (d1.success && d1.url) {
+            clientBase64Cache.set(cleanKey, d1.url);
+            return d1.url;
+          }
         }
       } catch {}
 
@@ -250,7 +291,10 @@ export async function cleanDocumentBase64Images(
         const r2 = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd });
         if (r2.ok) {
           const text = (await r2.text()).trim();
-          if (text.startsWith('http')) return text;
+          if (text.startsWith('http')) {
+            clientBase64Cache.set(cleanKey, text);
+            return text;
+          }
         }
       } catch {}
 

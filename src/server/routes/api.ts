@@ -178,6 +178,8 @@ apiRouter.post('/upload-image', async (req, res) => {
   }
 });
 
+const base64MemoryCache = new Map<string, string>();
+
 apiRouter.post('/clean-base64-images', async (req, res) => {
   try {
     const doc = req.body;
@@ -187,7 +189,28 @@ apiRouter.post('/clean-base64-images', async (req, res) => {
 
     const clonedDoc = JSON.parse(JSON.stringify(doc));
 
-    // Helper function to extract and upload any base64 found in a string
+    // Clean obsolete ghost properties accidentally injected into topic-card or other blocks
+    if (clonedDoc.rows && Array.isArray(clonedDoc.rows)) {
+      for (const row of clonedDoc.rows) {
+        if (row.columns && Array.isArray(row.columns)) {
+          for (const col of row.columns) {
+            if (col.blocks && Array.isArray(col.blocks)) {
+              for (const block of col.blocks) {
+                if (block && block.type === 'topic-card' && block.content) {
+                  delete block.content.url;
+                  delete block.content.imageUrl;
+                  delete block.content.thumbnailUrl;
+                  delete block.content.logoUrl;
+                  delete block.content.avatar;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Helper function to extract and upload any base64 found in a string (with deduplication cache)
     async function processStringForBase64(str: string, nameHint: string): Promise<{ result: string; replaced: boolean }> {
       if (!str || typeof str !== 'string' || !str.includes('data:image/')) {
         return { result: str, replaced: false };
@@ -196,9 +219,17 @@ apiRouter.post('/clean-base64-images', async (req, res) => {
       // Check if the whole string (or url(...) wrapped) is a single data URI
       const trimmed = str.trim().replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '').replace(/^['"]/, '').replace(/['"]$/, '');
       if (trimmed.startsWith('data:image/')) {
+        const cleanUri = trimmed.replace(/\s+/g, '');
+        if (base64MemoryCache.has(cleanUri)) {
+          const cachedUrl = base64MemoryCache.get(cleanUri)!;
+          const isUrlWrapped = str.trim().startsWith('url(');
+          return { result: isUrlWrapped ? `url('${cachedUrl}')` : cachedUrl, replaced: true };
+        }
+
         try {
           const uploaded = await uploadBase64ToCdn(trimmed, `${nameHint}.jpg`);
           if (uploaded.url) {
+            base64MemoryCache.set(cleanUri, uploaded.url);
             const isUrlWrapped = str.trim().startsWith('url(');
             const finalUrl = isUrlWrapped ? `url('${uploaded.url}')` : uploaded.url;
             return { result: finalUrl, replaced: true };
@@ -216,9 +247,17 @@ apiRouter.post('/clean-base64-images', async (req, res) => {
 
       for (let i = 0; i < matches.length; i++) {
         const rawMatch = matches[i];
+        const cleanMatch = rawMatch.replace(/\s+/g, '');
+        if (base64MemoryCache.has(cleanMatch)) {
+          updated = updated.split(rawMatch).join(base64MemoryCache.get(cleanMatch)!);
+          anyReplaced = true;
+          continue;
+        }
+
         try {
           const uploaded = await uploadBase64ToCdn(rawMatch, `${nameHint}-${i + 1}.jpg`);
           if (uploaded.url) {
+            base64MemoryCache.set(cleanMatch, uploaded.url);
             updated = updated.split(rawMatch).join(uploaded.url);
             anyReplaced = true;
           }

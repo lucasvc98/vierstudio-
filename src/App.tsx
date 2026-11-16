@@ -1249,16 +1249,30 @@ export const App: React.FC = () => {
         ...col,
         blocks: col.blocks.map(b => {
           if (b.id !== selectedBlockId) return b;
+          if (b.type === 'topic-card' || b.type === 'schedule-box') {
+            return {
+              ...b,
+              content: {
+                ...b.content,
+                iconImage: url
+              }
+            };
+          }
+          if (b.type === 'hero' || b.type === 'product' || b.type === 'image-text') {
+            return {
+              ...b,
+              content: {
+                ...b.content,
+                imageUrl: url,
+                alt: alt || b.content.alt || ''
+              }
+            };
+          }
           return {
             ...b,
             content: {
               ...b.content,
               url,
-              imageUrl: url,
-              thumbnailUrl: url,
-              iconImage: url,
-              logoUrl: url,
-              avatar: url,
               alt: alt || b.content.alt || ''
             }
           };
