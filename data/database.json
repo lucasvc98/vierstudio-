@@ -1,6 +1,32 @@
 {
   "projects": [
     {
+      "id": "test-large",
+      "name": "Test Large",
+      "rows": [
+        {
+          "id": "r1",
+          "columns": [
+            {
+              "id": "c1",
+              "blocks": [
+                {
+                  "id": "b1",
+                  "type": "image",
+                  "content": {
+                    "url": "https://files.catbox.moe/sqdf2e.txt",
+                    "alt": "Banner"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "updatedAt": "2026-11-16T15:24:25.323Z",
+      "createdAt": "2026-11-16T15:24:25.323Z"
+    },
+    {
       "rows": [
         {
           "id": "r1",
