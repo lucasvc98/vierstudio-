@@ -8,7 +8,7 @@ import { generateAiPageDocument } from '../aiPageGenerator';
 import { generateAiBoardContent } from '../aiBoardGenerator';
 import { AiPageBriefingRequest } from '../../types/page';
 import { AiBoardGenerateRequest } from '../../types/board';
-import { uploadBase64ToCdn } from '../imageUploader';
+import { uploadBase64ToCdn, cleanHtmlBase64 } from '../imageUploader';
 
 export const apiRouter = Router();
 
@@ -185,105 +185,98 @@ apiRouter.post('/clean-base64-images', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Documento inválido' });
     }
 
-    let replacedCount = 0;
     const clonedDoc = JSON.parse(JSON.stringify(doc));
 
-    // Scan all rows, columns, blocks and globalSettings
-    for (const row of clonedDoc.rows) {
-      if (row.style?.backgroundImage && typeof row.style.backgroundImage === 'string') {
-        const bg = row.style.backgroundImage;
-        if (bg.startsWith('data:image/')) {
-          try {
-            const resUpload = await uploadBase64ToCdn(bg, 'row-bg.jpg');
-            row.style.backgroundImage = resUpload.url;
-            replacedCount++;
-          } catch (e) {}
-        } else if (bg.includes('data:image/')) {
-          const match = bg.match(/data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/);
-          if (match) {
-            try {
-              const resUpload = await uploadBase64ToCdn(match[0], 'row-bg.jpg');
-              row.style.backgroundImage = bg.replace(match[0], resUpload.url);
-              replacedCount++;
-            } catch (e) {}
+    // Helper function to extract and upload any base64 found in a string
+    async function processStringForBase64(str: string, nameHint: string): Promise<{ result: string; replaced: boolean }> {
+      if (!str || typeof str !== 'string' || !str.includes('data:image/')) {
+        return { result: str, replaced: false };
+      }
+
+      // Check if the whole string (or url(...) wrapped) is a single data URI
+      const trimmed = str.trim().replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '').replace(/^['"]/, '').replace(/['"]$/, '');
+      if (trimmed.startsWith('data:image/')) {
+        try {
+          const uploaded = await uploadBase64ToCdn(trimmed, `${nameHint}.jpg`);
+          if (uploaded.url) {
+            const isUrlWrapped = str.trim().startsWith('url(');
+            const finalUrl = isUrlWrapped ? `url('${uploaded.url}')` : uploaded.url;
+            return { result: finalUrl, replaced: true };
           }
+        } catch (e) {
+          console.warn(`Erro ao converter base64 (${nameHint}):`, e);
         }
       }
 
-      if (row.columns && Array.isArray(row.columns)) {
-        for (const col of row.columns) {
-          if (col.blocks && Array.isArray(col.blocks)) {
-            for (const block of col.blocks) {
-              if (block && block.content) {
-                // Check all content properties for data:image
-                for (const key of Object.keys(block.content)) {
-                  const val = block.content[key];
-                  if (typeof val === 'string') {
-                    if (val.startsWith('data:image/')) {
-                      try {
-                        const resUpload = await uploadBase64ToCdn(val, `${block.type}-${key}.jpg`);
-                        block.content[key] = resUpload.url;
-                        replacedCount++;
-                      } catch (e) {
-                        console.warn(`Falha ao converter base64 no bloco ${block.id}:`, e);
-                      }
-                    } else if (val.includes('data:image/')) {
-                      const base64Regex = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/g;
-                      const matches = Array.from(new Set(val.match(base64Regex) || []));
-                      let updatedVal = val;
-                      for (const matchStr of matches) {
-                        try {
-                          const resUpload = await uploadBase64ToCdn(matchStr, `inline-html-img.jpg`);
-                          updatedVal = updatedVal.split(matchStr).join(resUpload.url);
-                          replacedCount++;
-                        } catch (e) {
-                          console.warn('Falha ao converter base64 embutido no HTML:', e);
-                        }
-                      }
-                      block.content[key] = updatedVal;
-                    }
-                  }
-                }
-              }
+      // If it's HTML or CSS containing one or more data URIs
+      let updated = str;
+      let anyReplaced = false;
+      const dataUriRegex = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/= \r\n\t]+/g;
+      const matches = Array.from(new Set(str.match(dataUriRegex) || []));
+
+      for (let i = 0; i < matches.length; i++) {
+        const rawMatch = matches[i];
+        try {
+          const uploaded = await uploadBase64ToCdn(rawMatch, `${nameHint}-${i + 1}.jpg`);
+          if (uploaded.url) {
+            updated = updated.split(rawMatch).join(uploaded.url);
+            anyReplaced = true;
+          }
+        } catch (e) {
+          console.warn(`Erro ao converter base64 embutido:`, e);
+        }
+      }
+
+      return { result: updated, replaced: anyReplaced };
+    }
+
+    // Deep recursive traversal of the entire document
+    async function deepCleanObject(obj: any, path = 'root'): Promise<number> {
+      if (!obj || typeof obj !== 'object') return 0;
+      let count = 0;
+
+      if (Array.isArray(obj)) {
+        for (let i = 0; i < obj.length; i++) {
+          const item = obj[i];
+          if (typeof item === 'string') {
+            const { result, replaced } = await processStringForBase64(item, `${path}-${i}`);
+            if (replaced) {
+              obj[i] = result;
+              count++;
             }
+          } else if (typeof item === 'object') {
+            count += await deepCleanObject(item, `${path}-${i}`);
           }
         }
+        return count;
       }
+
+      for (const key of Object.keys(obj)) {
+        const val = obj[key];
+        if (typeof val === 'string') {
+          const { result, replaced } = await processStringForBase64(val, `${path}-${key}`);
+          if (replaced) {
+            obj[key] = result;
+            count++;
+          }
+        } else if (typeof val === 'object') {
+          count += await deepCleanObject(val, `${path}-${key}`);
+        }
+      }
+
+      return count;
     }
 
-    // Check thumbnailData
-    if (typeof clonedDoc.thumbnailData === 'string' && clonedDoc.thumbnailData.startsWith('data:image/')) {
-      try {
-        const resUpload = await uploadBase64ToCdn(clonedDoc.thumbnailData, 'thumbnail.jpg');
-        clonedDoc.thumbnailData = resUpload.url;
-        replacedCount++;
-      } catch (e) {}
-    }
-
-    // Check globalSettings bodyBgImage / contentBgImage
-    if (clonedDoc.globalSettings) {
-      if (typeof clonedDoc.globalSettings.bodyBgImage === 'string' && clonedDoc.globalSettings.bodyBgImage.startsWith('data:image/')) {
-        try {
-          const resUpload = await uploadBase64ToCdn(clonedDoc.globalSettings.bodyBgImage, 'body-bg.jpg');
-          clonedDoc.globalSettings.bodyBgImage = resUpload.url;
-          replacedCount++;
-        } catch (e) {}
-      }
-      if (typeof clonedDoc.globalSettings.contentBgImage === 'string' && clonedDoc.globalSettings.contentBgImage.startsWith('data:image/')) {
-        try {
-          const resUpload = await uploadBase64ToCdn(clonedDoc.globalSettings.contentBgImage, 'content-bg.jpg');
-          clonedDoc.globalSettings.contentBgImage = resUpload.url;
-          replacedCount++;
-        } catch (e) {}
-      }
-    }
+    const replacedCount = await deepCleanObject(clonedDoc, 'doc');
 
     // Save cleaned project and snapshot backup
     if (clonedDoc.id && replacedCount > 0) {
       try {
         storage.saveTemplateBackup(doc, 'base64_migration');
         storage.saveProject(clonedDoc);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Aviso: Falha ao salvar backup do projeto migrado:', e);
+      }
     }
 
     res.json({
@@ -293,6 +286,24 @@ apiRouter.post('/clean-base64-images', async (req, res) => {
     });
   } catch (err: any) {
     console.error('Erro em /api/clean-base64-images:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+apiRouter.post('/clean-base64-html', async (req, res) => {
+  try {
+    const { html } = req.body;
+    if (!html || typeof html !== 'string') {
+      return res.status(400).json({ success: false, message: 'HTML inválido' });
+    }
+    const result = await cleanHtmlBase64(html);
+    res.json({
+      success: true,
+      html: result.html,
+      replacedCount: result.replacedCount
+    });
+  } catch (err: any) {
+    console.error('Erro em /api/clean-base64-html:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });

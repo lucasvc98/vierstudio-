@@ -96,11 +96,12 @@ export async function uploadImageBuffer(
 
   // 2. Validate magic bytes / content signature
   const sig = validateImageSignature(buffer);
-  if (!sig.isValid) {
+  const isImageMime = fallbackMime && fallbackMime.startsWith('image/');
+  if (!sig.isValid && !isImageMime) {
     throw new Error('Arquivo rejeitado: o conteúdo fornecido não possui assinatura válida de imagem (PNG, JPG, WebP ou GIF).');
   }
-  const mimeType = sig.detectedMime || fallbackMime;
-  const ext = sig.ext || 'jpg';
+  const mimeType = sig.detectedMime || fallbackMime || 'image/jpeg';
+  const ext = sig.ext || (mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : mimeType.includes('gif') ? 'gif' : 'jpg');
 
   // 3. Compute SHA-256 for integrity and deduplication
   const checksumSha256 = crypto.createHash('sha256').update(buffer).digest('hex');
@@ -172,19 +173,64 @@ export async function uploadBase64ToCdn(
   base64DataUri: string,
   suggestedFilename = 'image.jpg'
 ): Promise<UploadResult> {
-  const commaIdx = base64DataUri.indexOf(',');
-  if (commaIdx === -1 || !base64DataUri.startsWith('data:image/')) {
+  if (!base64DataUri || typeof base64DataUri !== 'string') {
     throw new Error('Formato Base64 de imagem inválido');
   }
 
-  const header = base64DataUri.slice(0, commaIdx);
+  // Extract pure data URI even if wrapped in url("...") or src="..." or contains quotes/whitespace
+  const trimmed = base64DataUri.trim().replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '').replace(/^src=['"]?/, '');
+  const dataUriIdx = trimmed.indexOf('data:image/');
+  if (dataUriIdx === -1) {
+    throw new Error('Formato Base64 de imagem inválido: prefixo data:image/ não encontrado');
+  }
+
+  const cleanUri = trimmed.slice(dataUriIdx);
+  const commaIdx = cleanUri.indexOf(',');
+  if (commaIdx === -1) {
+    throw new Error('Formato Base64 de imagem inválido: separador de dados não encontrado');
+  }
+
+  const header = cleanUri.slice(0, commaIdx);
   const typeMatch = header.match(/^data:image\/([a-zA-Z0-9+.-]+);base64/i);
-  const rawExt = typeMatch ? typeMatch[1].toLowerCase() : 'jpeg';
+  const rawExt = typeMatch ? (typeMatch[1].toLowerCase() === 'jpeg' ? 'jpg' : typeMatch[1].toLowerCase()) : 'jpg';
   const fallbackMime = `image/${rawExt}`;
 
-  // Clean all whitespace, newlines, tabs, and carriage returns
-  const cleanB64 = base64DataUri.slice(commaIdx + 1).replace(/\s+/g, '');
-  const buffer = Buffer.from(cleanB64, 'base64');
+  // Clean all whitespace, newlines, tabs, and trailing quotes/parentheses
+  let rawB64 = cleanUri.slice(commaIdx + 1);
+  rawB64 = rawB64.replace(/['"\);\s]+$/, '').replace(/\s+/g, '');
+  const buffer = Buffer.from(rawB64, 'base64');
 
   return uploadImageBuffer(buffer, suggestedFilename, fallbackMime);
+}
+
+/**
+ * Scans an HTML string for all data:image base64 URLs (in <img> src or style="background-image:url(...)"),
+ * uploads them to CDN, and replaces them with public HTTPS URLs.
+ */
+export async function cleanHtmlBase64(html: string): Promise<{ html: string; replacedCount: number }> {
+  if (!html || typeof html !== 'string' || !html.includes('data:image/')) {
+    return { html, replacedCount: 0 };
+  }
+
+  let updatedHtml = html;
+  let replacedCount = 0;
+
+  // Regex to match data:image data URIs in HTML attributes and CSS
+  const dataUriRegex = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/= \r\n\t]+/g;
+  const matches = Array.from(new Set(html.match(dataUriRegex) || []));
+
+  for (let i = 0; i < matches.length; i++) {
+    const rawMatch = matches[i];
+    try {
+      const res = await uploadBase64ToCdn(rawMatch, `email-content-img-${i + 1}.jpg`);
+      if (res.url) {
+        updatedHtml = updatedHtml.split(rawMatch).join(res.url);
+        replacedCount++;
+      }
+    } catch (err) {
+      console.warn('Erro ao limpar base64 do HTML:', err);
+    }
+  }
+
+  return { html: updatedHtml, replacedCount };
 }

@@ -30,42 +30,70 @@ export function auditEmailForExport(doc?: EmailDocument | null): EmailExportAudi
     const val = url.trim();
     if (val.startsWith('data:image/') || val.includes('data:image/')) {
       base64Count++;
-      issues.push(`Imagem em Base64 em ${locationName}`);
+      issues.push(`Imagem em Base64 (${locationName})`);
     } else if (val.startsWith('blob:')) {
       blobCount++;
-      issues.push(`URL temporária Blob em ${locationName}`);
+      issues.push(`URL temporária Blob (${locationName})`);
     } else if (val.startsWith('http://localhost') || val.startsWith('http://127.0.0.1') || val.startsWith('file://')) {
       localPathCount++;
-      issues.push(`URL local em ${locationName}`);
+      issues.push(`URL local (${locationName})`);
     }
   };
 
+  // 1. Check globalSettings
+  if (doc.globalSettings) {
+    if (doc.globalSettings.bodyBgImage) checkUrl(doc.globalSettings.bodyBgImage, 'Fundo Geral do E-mail');
+    if (doc.globalSettings.contentBgImage) checkUrl(doc.globalSettings.contentBgImage, 'Fundo do Conteúdo');
+  }
+
+  // 2. Deep scan rows, columns and blocks
   if (doc.rows && Array.isArray(doc.rows)) {
     doc.rows.forEach((r, ri) => {
-      if (r.style?.backgroundImage) checkUrl(r.style.backgroundImage, `Fundo da Linha ${ri + 1}`);
+      const rowName = `Linha ${ri + 1}`;
+      if (r.style?.backgroundImage) checkUrl(r.style.backgroundImage, `${rowName} (Fundo)`);
       if (r.columns && Array.isArray(r.columns)) {
-        r.columns.forEach((c) => {
+        r.columns.forEach((c, ci) => {
+          const colName = `${rowName} Coluna ${ci + 1}`;
+          if (c.style?.backgroundColor) checkUrl(c.style.backgroundColor, `${colName} (Cor)`);
           if (c.blocks && Array.isArray(c.blocks)) {
             c.blocks.forEach((b) => {
-              if (b.type === 'image' || b.type === 'logo') {
-                if (!b.content?.url) {
-                  unhostedCount++;
-                  issues.push(`Imagem sem endereço no bloco ${b.type}`);
-                } else {
-                  checkUrl(b.content.url, `Bloco ${b.type} (${b.content.alt || 'Sem descrição'})`);
+              const blockName = `Bloco ${b.type || 'elemento'}`;
+              if (b.content && typeof b.content === 'object') {
+                for (const k of Object.keys(b.content)) {
+                  const v = b.content[k];
+                  if (typeof v === 'string') {
+                    if (k === 'url' || k === 'imageUrl' || k === 'src' || k === 'backgroundImage') {
+                      if (!v.trim() && (b.type === 'image' || b.type === 'logo')) {
+                        unhostedCount++;
+                        issues.push(`${blockName}: Imagem sem endereço`);
+                      } else {
+                        checkUrl(v, `${blockName}.${k}`);
+                      }
+                    } else if (v.includes('data:image/')) {
+                      checkUrl(v, `${blockName}.${k}`);
+                    }
+                  }
                 }
               }
-              if (b.type === 'hero' && b.content?.imageUrl) {
-                checkUrl(b.content.imageUrl, `Banner Hero`);
-              }
-              if ((b.type === 'product' || b.type === 'image-text') && b.content?.imageUrl) {
-                checkUrl(b.content.imageUrl, `Card de Produto`);
+              if (b.style && typeof b.style === 'object') {
+                for (const sk of Object.keys(b.style)) {
+                  const sv = (b.style as any)[sk];
+                  if (typeof sv === 'string' && sv.includes('data:image/')) {
+                    checkUrl(sv, `${blockName}.style.${sk}`);
+                  }
+                }
               }
             });
           }
         });
       }
     });
+  }
+
+  // 3. Check thumbnail
+  if (typeof doc.thumbnailData === 'string' && doc.thumbnailData.startsWith('data:image/')) {
+    base64Count++;
+    issues.push('Miniatura da capa em Base64');
   }
 
   const canExport = base64Count === 0 && blobCount === 0 && localPathCount === 0;
@@ -85,45 +113,8 @@ export function auditEmailForExport(doc?: EmailDocument | null): EmailExportAudi
  */
 export function hasBase64Images(doc?: EmailDocument | null): boolean {
   if (!doc) return false;
-
-  // Check blocks
-  if (doc.rows && Array.isArray(doc.rows)) {
-    for (const row of doc.rows) {
-      if (row.columns && Array.isArray(row.columns)) {
-        for (const col of row.columns) {
-          if (col.blocks && Array.isArray(col.blocks)) {
-            for (const b of col.blocks) {
-              if (b && b.content) {
-                for (const key of Object.keys(b.content)) {
-                  const val = b.content[key];
-                  if (typeof val === 'string' && (val.startsWith('data:image/') || val.includes('data:image/'))) {
-                    return true;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Check thumbnail
-  if (typeof doc.thumbnailData === 'string' && doc.thumbnailData.startsWith('data:image/')) {
-    return true;
-  }
-
-  // Check background
-  if (doc.globalSettings) {
-    if (typeof doc.globalSettings.bodyBgImage === 'string' && doc.globalSettings.bodyBgImage.startsWith('data:image/')) {
-      return true;
-    }
-    if (typeof doc.globalSettings.contentBgImage === 'string' && doc.globalSettings.contentBgImage.startsWith('data:image/')) {
-      return true;
-    }
-  }
-
-  return false;
+  const audit = auditEmailForExport(doc);
+  return audit.base64Count > 0;
 }
 
 /**
@@ -193,7 +184,7 @@ export async function uploadImageFileToCloud(file: File): Promise<string> {
 export async function cleanDocumentBase64Images(
   doc: EmailDocument
 ): Promise<{ doc: EmailDocument; replacedCount: number }> {
-  // 1. Try backend API endpoint
+  // 1. Try backend API endpoint (handles full deep extraction, backup snapshot, and uploads)
   try {
     const res = await fetch('/api/clean-base64-images', {
       method: 'POST',
@@ -202,28 +193,39 @@ export async function cleanDocumentBase64Images(
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.success && data.doc && data.replacedCount > 0) {
-        return {
-          doc: data.doc,
-          replacedCount: data.replacedCount || 0
-        };
+      if (data.success && data.doc) {
+        if (data.replacedCount > 0) {
+          return {
+            doc: data.doc,
+            replacedCount: data.replacedCount
+          };
+        }
+        // If 0, double check with audit
+        const audit = auditEmailForExport(data.doc);
+        if (audit.canExport) {
+          return {
+            doc: data.doc,
+            replacedCount: 0
+          };
+        }
       }
     }
   } catch (err) {
     console.warn('Falha ao limpar base64 via API backend, tentando fallback direto:', err);
   }
 
-  // 2. Client-side fallback: direct conversion of each base64 found
+  // 2. Client-side fallback: deep recursive walk of the entire document
   try {
     const cloned = JSON.parse(JSON.stringify(doc)) as EmailDocument;
     let count = 0;
 
     const convertOneBase64 = async (b64: string, name: string): Promise<string> => {
+      // 1. Try backend upload-image endpoint
       try {
         const r1 = await fetch('/api/upload-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ base64: b64, filename: name })
+          body: JSON.stringify({ base64: b64, filename: `${name}.jpg` })
         });
         if (r1.ok) {
           const d1 = await r1.json();
@@ -231,24 +233,20 @@ export async function cleanDocumentBase64Images(
         }
       } catch {}
 
+      // 2. Direct browser upload with FormData
       try {
-        const commaIdx = b64.indexOf(',');
-        if (commaIdx === -1 || !b64.startsWith('data:image/')) return b64;
-        const header = b64.slice(0, commaIdx);
-        const typeMatch = header.match(/^data:image\/([a-zA-Z0-9+.-]+);base64/i);
-        const rawExt = typeMatch ? (typeMatch[1].toLowerCase() === 'jpeg' ? 'jpg' : typeMatch[1].toLowerCase()) : 'jpg';
-        const cleanB64 = b64.slice(commaIdx + 1).replace(/\s+/g, '');
+        const cleanB64 = b64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '').replace(/['"\);\s]+$/, '').replace(/\s+/g, '');
         const byteCharacters = atob(cleanB64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: `image/${rawExt}` });
+        const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
         const fd = new FormData();
         fd.append('reqtype', 'fileupload');
-        fd.append('fileToUpload', blob, `${name}.${rawExt}`);
+        fd.append('fileToUpload', blob, `${name}.jpg`);
         const r2 = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd });
         if (r2.ok) {
           const text = (await r2.text()).trim();
@@ -259,52 +257,88 @@ export async function cleanDocumentBase64Images(
       return b64;
     };
 
-    if (cloned.rows && Array.isArray(cloned.rows)) {
-      for (const row of cloned.rows) {
-        if (row.style?.backgroundImage && row.style.backgroundImage.startsWith('data:image/')) {
-          const newBg = await convertOneBase64(row.style.backgroundImage, 'row-bg');
-          if (newBg !== row.style.backgroundImage) {
-            row.style.backgroundImage = newBg;
-            count++;
-          }
-        }
-        if (row.columns && Array.isArray(row.columns)) {
-          for (const col of row.columns) {
-            if (col.blocks && Array.isArray(col.blocks)) {
-              for (const block of col.blocks) {
-                if (block && block.content) {
-                  for (const key of Object.keys(block.content)) {
-                    const val = block.content[key];
-                    if (typeof val === 'string' && val.startsWith('data:image/')) {
-                      const newUrl = await convertOneBase64(val, `${block.type || 'img'}-${key}`);
-                      if (newUrl !== val) {
-                        block.content[key] = newUrl;
-                        count++;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+    const processStr = async (str: string, hint: string): Promise<{ res: string; replaced: boolean }> => {
+      if (!str || typeof str !== 'string' || !str.includes('data:image/')) return { res: str, replaced: false };
+      const trimmed = str.trim().replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '').replace(/^['"]/, '').replace(/['"]$/, '');
+      if (trimmed.startsWith('data:image/')) {
+        const uploaded = await convertOneBase64(trimmed, hint);
+        if (uploaded && uploaded !== trimmed && !uploaded.startsWith('data:image/')) {
+          const isUrlWrapped = str.trim().startsWith('url(');
+          return { res: isUrlWrapped ? `url('${uploaded}')` : uploaded, replaced: true };
         }
       }
-    }
 
-    if (cloned.thumbnailData && cloned.thumbnailData.startsWith('data:image/')) {
-      const newThumb = await convertOneBase64(cloned.thumbnailData, 'thumbnail');
-      if (newThumb !== cloned.thumbnailData) {
-        cloned.thumbnailData = newThumb;
-        count++;
+      // If inline HTML with data:image
+      let updated = str;
+      let any = false;
+      const dataUriRegex = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/= \r\n\t]+/g;
+      const matches = Array.from(new Set(str.match(dataUriRegex) || []));
+      for (let i = 0; i < matches.length; i++) {
+        const m = matches[i];
+        const up = await convertOneBase64(m, `${hint}-${i}`);
+        if (up && up !== m && !up.startsWith('data:image/')) {
+          updated = updated.split(m).join(up);
+          any = true;
+        }
       }
-    }
+      return { res: updated, replaced: any };
+    };
 
-    if (count > 0) {
-      return { doc: cloned, replacedCount: count };
-    }
+    const deepClean = async (obj: any, path = 'doc'): Promise<void> => {
+      if (!obj || typeof obj !== 'object') return;
+      if (Array.isArray(obj)) {
+        for (let i = 0; i < obj.length; i++) {
+          if (typeof obj[i] === 'string') {
+            const { res, replaced } = await processStr(obj[i], `${path}-${i}`);
+            if (replaced) { obj[i] = res; count++; }
+          } else if (typeof obj[i] === 'object') {
+            await deepClean(obj[i], `${path}-${i}`);
+          }
+        }
+        return;
+      }
+      for (const k of Object.keys(obj)) {
+        if (typeof obj[k] === 'string') {
+          const { res, replaced } = await processStr(obj[k], `${path}-${k}`);
+          if (replaced) { obj[k] = res; count++; }
+        } else if (typeof obj[k] === 'object') {
+          await deepClean(obj[k], `${path}-${k}`);
+        }
+      }
+    };
+
+    await deepClean(cloned);
+
+    return { doc: cloned, replacedCount: count };
   } catch (err) {
     console.error('Falha no fallback direto:', err);
   }
 
   return { doc, replacedCount: 0 };
+}
+
+/**
+ * Ensures an exported HTML string has zero base64 images by converting any remaining
+ * data:image tags into public HTTPS URLs.
+ */
+export async function cleanHtmlStringBase64(html: string): Promise<string> {
+  if (!html || typeof html !== 'string' || !html.includes('data:image/')) {
+    return html;
+  }
+  try {
+    const res = await fetch('/api/clean-base64-html', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.html) {
+        return data.html;
+      }
+    }
+  } catch (err) {
+    console.warn('Falha ao limpar HTML via API:', err);
+  }
+  return html;
 }

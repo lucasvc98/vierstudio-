@@ -1,6 +1,72 @@
 {
   "projects": [
     {
+      "id": "test-deep-cleaning",
+      "name": "Test Deep Cleaning",
+      "rows": [
+        {
+          "id": "r1",
+          "layout": "1-col",
+          "style": {
+            "backgroundImage": "url('https://files.catbox.moe/3umu8k.png')"
+          },
+          "columns": [
+            {
+              "id": "c1",
+              "blocks": [
+                {
+                  "id": "b1",
+                  "type": "image",
+                  "content": {
+                    "url": "https://files.catbox.moe/3umu8k.png"
+                  }
+                },
+                {
+                  "id": "b2",
+                  "type": "text",
+                  "content": {
+                    "html": "<p>Ola <img src=\"https://files.catbox.moe/3umu8k.png\" alt=\"teste\" /></p>"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "globalSettings": {
+        "containerWidth": 600,
+        "bodyBgColor": "#000000",
+        "contentBgColor": "#ffffff",
+        "bodyBgImage": "https://files.catbox.moe/3umu8k.png"
+      },
+      "updatedAt": "2026-11-16T16:43:10.912Z"
+    },
+    {
+      "id": "test-123",
+      "name": "Test",
+      "rows": [
+        {
+          "id": "r1",
+          "columns": [
+            {
+              "id": "c1",
+              "blocks": [
+                {
+                  "id": "b1",
+                  "type": "image",
+                  "content": {
+                    "url": "https://files.catbox.moe/3umu8k.png"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "updatedAt": "2026-11-16T16:30:31.698Z",
+      "createdAt": "2026-11-16T16:30:31.698Z"
+    },
+    {
       "id": "test-migracao-base64",
       "name": "Template Antigo com Base64",
       "rows": [

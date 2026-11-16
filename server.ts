@@ -39,6 +39,10 @@ async function startServer() {
   // Mount API router
   app.use('/api', apiRouter);
 
+  // Serve uploaded public images
+  const uploadsPath = path.resolve(__dirname, 'public/uploads');
+  app.use('/uploads', express.static(uploadsPath));
+
   // ===================== ROTA PÚBLICA DE LANDING PAGES =====================
   app.get('/p/:slug', (req, res) => {
     try {

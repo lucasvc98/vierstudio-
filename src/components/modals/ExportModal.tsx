@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Copy, Download, Code2, Check, AlertTriangle, ShieldCheck, ExternalLink, Sparkles, Cloud, Lock } from 'lucide-react';
 import { EmailDocument } from '../../types/email';
 import { compileEmailHtml } from '../../utils/emailCompiler';
-import { hasBase64Images, cleanDocumentBase64Images, auditEmailForExport, EmailExportAudit } from '../../utils/cloudImageUploader';
+import { hasBase64Images, cleanDocumentBase64Images, auditEmailForExport, cleanHtmlStringBase64, EmailExportAudit } from '../../utils/cloudImageUploader';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -40,21 +40,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     setConversionMessage('Hospedando imagens na nuvem em alta velocidade...');
     try {
       const { doc: cleanedDoc, replacedCount } = await cleanDocumentBase64Images(activeDoc);
-      if (replacedCount > 0) {
-        setActiveDoc(cleanedDoc);
-        if (onUpdateDocument) {
-          onUpdateDocument(cleanedDoc);
-        }
-        setConversionMessage(`✓ Sucesso! ${replacedCount} imagem(ns) hospedada(s) com sucesso na nuvem! 100% compatível com o Brevo.`);
+      setActiveDoc(cleanedDoc);
+      if (onUpdateDocument) {
+        onUpdateDocument(cleanedDoc);
+      }
+      const auditAfter = auditEmailForExport(cleanedDoc);
+      if (auditAfter.canExport) {
+        setConversionMessage(`✓ Sucesso! ${replacedCount > 0 ? `${replacedCount} imagem(ns) hospedada(s) na nuvem. ` : ''}100% compatível com o Brevo.`);
         setTimeout(() => setConversionMessage(null), 5000);
       } else {
-        setConversionMessage('✓ Verificação concluída. Nenhuma imagem Base64 restante.');
-        setTimeout(() => setConversionMessage(null), 3000);
+        setConversionMessage(`⚠️ Atenção: ${auditAfter.issues.join(' • ')}`);
+        setTimeout(() => setConversionMessage(null), 8000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Erro ao converter imagens automaticamente:', err);
-      setConversionMessage('Falha ao conectar com o serviço de nuvem. Tente novamente.');
-      setTimeout(() => setConversionMessage(null), 4000);
+      setConversionMessage(`Falha ao conectar com o serviço de nuvem: ${err.message || 'Erro de conexão'}`);
+      setTimeout(() => setConversionMessage(null), 5000);
     } finally {
       setIsConverting(false);
     }
@@ -70,57 +71,68 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const containsBase64 = !audit.canExport || hasBase64Images(activeDoc);
 
   const handleCopy = async () => {
-    if (!audit.canExport) {
-      await handleAutoConvert();
-      return;
-    }
     try {
-      let htmlToCopy = compiledHtml;
-      if (containsBase64) {
+      let currentDoc = activeDoc;
+      if (!audit.canExport || containsBase64) {
         setIsConverting(true);
-        const { doc: cleaned, replacedCount } = await cleanDocumentBase64Images(activeDoc);
-        if (replacedCount > 0) {
-          setActiveDoc(cleaned);
-          if (onUpdateDocument) onUpdateDocument(cleaned);
-          htmlToCopy = compileEmailHtml(cleaned);
-        }
+        setConversionMessage('Publicando imagens na nuvem antes de copiar...');
+        const { doc: cleanedDoc } = await cleanDocumentBase64Images(activeDoc);
+        currentDoc = cleanedDoc;
+        setActiveDoc(cleanedDoc);
+        if (onUpdateDocument) onUpdateDocument(cleanedDoc);
         setIsConverting(false);
       }
+
+      let htmlToCopy = compileEmailHtml(currentDoc);
+      if (htmlToCopy.includes('data:image/')) {
+        setIsConverting(true);
+        htmlToCopy = await cleanHtmlStringBase64(htmlToCopy);
+        setIsConverting(false);
+      }
+
       await navigator.clipboard.writeText(htmlToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
       console.error('Failed to copy', err);
+      setIsConverting(false);
     }
   };
 
   const handleDownload = async () => {
-    if (!audit.canExport) {
-      await handleAutoConvert();
-      return;
-    }
-    let docToDownload = activeDoc;
-    if (containsBase64) {
-      setIsConverting(true);
-      const { doc: cleaned, replacedCount } = await cleanDocumentBase64Images(activeDoc);
-      if (replacedCount > 0) {
-        setActiveDoc(cleaned);
-        if (onUpdateDocument) onUpdateDocument(cleaned);
-        docToDownload = cleaned;
+    try {
+      let currentDoc = activeDoc;
+      if (!audit.canExport || containsBase64) {
+        setIsConverting(true);
+        setConversionMessage('Publicando imagens na nuvem antes de baixar...');
+        const { doc: cleanedDoc } = await cleanDocumentBase64Images(activeDoc);
+        currentDoc = cleanedDoc;
+        setActiveDoc(cleanedDoc);
+        if (onUpdateDocument) onUpdateDocument(cleanedDoc);
+        setIsConverting(false);
       }
+
+      let htmlString = compileEmailHtml(currentDoc);
+      if (htmlString.includes('data:image/')) {
+        setIsConverting(true);
+        htmlString = await cleanHtmlStringBase64(htmlString);
+        setIsConverting(false);
+      }
+
+      const filename = `${currentDoc.name.toLowerCase().replace(/[^a-z0-9]/gi, '_') || 'email'}.html`;
+      const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download', err);
       setIsConverting(false);
     }
-    const htmlString = compileEmailHtml(docToDownload);
-    const filename = `${docToDownload.name.toLowerCase().replace(/[^a-z0-9]/gi, '_') || 'email'}.html`;
-    const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = window.document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    window.document.body.appendChild(link);
-    link.click();
-    window.document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -255,6 +267,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 </div>
                 <p className="text-amber-800 text-xs mt-0.5 leading-snug">
                   O Brevo e outras plataformas rejeitam imagens embutidas em Base64 ou links locais. Clique ao lado para publicar e hospedar na nuvem com URLs públicas permanentes (HTTPS).
+                  {audit.issues.length > 0 && (
+                    <span className="block mt-1 font-semibold text-amber-900/90 text-[11px]">
+                      Detectado em: {audit.issues.join(' • ')}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>

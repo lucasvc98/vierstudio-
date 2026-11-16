@@ -154,12 +154,13 @@ function renderRow(row: EmailRow, containerWidth: number, globalSettings: any): 
   const columnsHtml = row.columns.map((col, index) => {
     const colPercentage = col.widthPercentage || (100 / totalCols);
     const colWidth = Math.floor((availableWidth * colPercentage) / 100);
-    const colBg = col.style.backgroundColor || 'transparent';
-    const cPadTop = col.style.paddingTop ?? 0;
-    const cPadBottom = col.style.paddingBottom ?? 0;
-    const cPadLeft = col.style.paddingLeft ?? (totalCols > 1 && index > 0 ? 8 : 0);
-    const cPadRight = col.style.paddingRight ?? (totalCols > 1 && index < totalCols - 1 ? 8 : 0);
-    const vAlign = col.style.verticalAlign || 'top';
+    const colStyle = col.style || {};
+    const colBg = colStyle.backgroundColor || 'transparent';
+    const cPadTop = colStyle.paddingTop ?? 0;
+    const cPadBottom = colStyle.paddingBottom ?? 0;
+    const cPadLeft = colStyle.paddingLeft ?? (totalCols > 1 && index > 0 ? 8 : 0);
+    const cPadRight = colStyle.paddingRight ?? (totalCols > 1 && index < totalCols - 1 ? 8 : 0);
+    const vAlign = colStyle.verticalAlign || 'top';
 
     const blocksHtml = col.blocks.map(b => renderBlock(b, globalSettings)).join('\n');
 
@@ -201,7 +202,9 @@ function renderRow(row: EmailRow, containerWidth: number, globalSettings: any): 
 }
 
 function renderBlock(block: EmailBlock, globalSettings: any): string {
-  const { type, content, style } = block;
+  const type = block.type;
+  const content = block.content || {};
+  const style = block.style || {};
   const defaultFont = style.fontFamily || globalSettings.defaultFontFamily || 'Arial, Helvetica, sans-serif';
 
   switch (type) {
